@@ -2,6 +2,7 @@ import os.path
 import unittest
 
 import pandas as pd
+import torch
 
 from embedding_predictor import EmbeddingPredictor
 
@@ -13,8 +14,11 @@ def get_test_resource_path(resource_name) -> str:
 class EmbeddingPredictorTest(unittest.TestCase):
     def setUp(self):
         self.embedding_predictor = EmbeddingPredictor()
-        self.embeddings = pd.read_csv(get_test_resource_path("subset_embeddings.csv"))
-        self.parameters = pd.read_csv(get_test_resource_path("subset_parametric.csv"))
+        self.embeddings = pd.read_csv(get_test_resource_path("subset_embeddings.csv"), index_col="Unnamed: 0")
+        self.parameters = pd.read_csv(get_test_resource_path("subset_parametric.csv"), index_col="Unnamed: 0")
 
     def test_predictor(self):
-        self.embedding_predictor.predict(self.parameters)
+        predictor_input = torch.tensor(self.parameters.values, dtype=torch.float32)
+        predictions = self.embedding_predictor.predict(predictor_input)
+        print(predictions.shape)
+        print(predictions.detach().numpy())
