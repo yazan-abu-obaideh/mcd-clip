@@ -51,10 +51,10 @@ class ResidualNetwork(nn.Module):
 
 
 device = torch.device('cpu')
-model = torch.load("resnet_0010_0005.pt", map_location=device)
+model = torch.load("src/resources/resnet_0010_0005.pt", map_location=device)
 
-subset_embeddings = pd.read_csv("subset_embeddings.csv", index_col=0)
-subset_parametric = pd.read_csv("subset_parametric.csv", index_col=0)
+subset_embeddings = pd.read_csv("test/resources/subset_embeddings.csv", index_col=0)
+subset_parametric = pd.read_csv("test/resources/subset_parametric.csv", index_col=0)
 
 x_train, x_test, y_train, y_test = train_test_split(subset_parametric, subset_embeddings, test_size=0.05, random_state=42)
 x_train, _, y_train, _ = train_test_split(x_train, y_train, test_size=0.05, random_state=42)
