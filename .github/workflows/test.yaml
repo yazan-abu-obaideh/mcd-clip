@@ -21,4 +21,4 @@ jobs:
       - name: Install backend
         run: pip install .;
       - name: run tests
-        run: python3 -m unittest discover -v;
+        run: python3 -m unittest discover -s test/ -t test/;
