@@ -1,5 +1,7 @@
 import os.path
 
+import numpy as np
+import pandas as pd
 import torch
 import torch.nn as nn
 import __main__
@@ -56,5 +58,7 @@ _MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
 
 class EmbeddingPredictor:
 
-    def predict(self, x):
-        return _MODEL_FUNCTION(x).cpu()
+    def predict(self, x: pd.DataFrame) -> np.ndarray:
+        tensor = torch.tensor(x.values, dtype=torch.float32)
+        result_tensor = _MODEL_FUNCTION(tensor).cpu()
+        return result_tensor.detach().numpy()
