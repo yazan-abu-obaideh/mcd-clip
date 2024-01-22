@@ -25,6 +25,10 @@ CHAINSTAYbrdgdia1,float64
 SEATSTAYbrdgCheck,bool
 CHAINSTAYbrdgCheck,bool
 Dropout spacing,float64
+Wall thickness Bottom Bracket,float64
+Wall thickness Top tube,float64
+Wall thickness Head tube,float64
+Wall thickness Down tube,float64
 Wall thickness Chain stay,float64
 Wall thickness Seat stay,float64
 Wall thickness Seat tube,float64
@@ -55,6 +59,9 @@ Saddle height,float64
 Down tube diameter,float64
 Seatpost LENGTH,int64
 MATERIAL OHCLASS: CARBON,bool
+MATERIAL OHCLASS: ALUMINIUM,bool
+MATERIAL OHCLASS: BAMBOO,bool
+MATERIAL OHCLASS: TITANIUM,bool
 MATERIAL OHCLASS: OTHER,bool
 MATERIAL OHCLASS: STEEL,bool
 Dropout spacing style OHCLASS: 0,bool

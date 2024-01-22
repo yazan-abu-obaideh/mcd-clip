@@ -11,7 +11,6 @@ MAPPINGS = {
 
 path = os.path.join(os.path.dirname(__file__), "resources", "clip_sBIKED_processed_datatypes.csv")
 name_to_type = pd.read_csv(path, index_col=0)
-print(name_to_type.value_counts())
 
 
 def map_column(column: pd.Series):
