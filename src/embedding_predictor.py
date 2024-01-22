@@ -27,7 +27,6 @@ class ResidualBlock(nn.Module):
         return total
 
 
-# Residual Network class
 class ResidualNetwork(nn.Module):
     def __init__(self, input_size, output_size, layer_size, layers_per_block, num_blocks):
         super(ResidualNetwork, self).__init__()
