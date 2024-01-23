@@ -3,3 +3,4 @@
 all_embeddings.csv
 all_parametric.csv
 **/*.egg-info
+**/build

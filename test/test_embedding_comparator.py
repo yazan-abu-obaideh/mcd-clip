@@ -39,10 +39,15 @@ class EmbeddingComparatorTest(unittest.TestCase):
     def test_error_messages(self):
         array_1d = np.array([1, 2, 3])
         array_2d = np.array([[1, 2, 3]])
-        with self.assertRaises(AssertionError) as exception_context:
-            get_cosine_similarity(array_1d, array_1d)
-        self.assertEqual(exception_context.exception.args[0], "matrix_2d must be a 2D matrix")
-        with self.assertRaises(AssertionError) as exception_context:
-            array_1d = np.array([1, 2, 3])
-            get_cosine_similarity(array_2d, array_2d)
-        self.assertEqual(exception_context.exception.args[0], "reference_1d_array must be a 1D array")
+        self.assertRaisesWithMessage(AssertionError, lambda: get_cosine_similarity(array_1d, array_1d),
+                                     "matrix_2d must be a 2D matrix")
+        self.assertRaisesWithMessage(AssertionError, lambda: get_cosine_similarity(array_2d, array_2d),
+                                     "reference_1d_array must be a 1D array")
+
+    def assertRaisesWithMessage(self,
+                                expected_exception,
+                                problematic_code: callable,
+                                expected_message: str):
+        with self.assertRaises(expected_exception) as exception_context:
+            problematic_code()
+        self.assertEqual(exception_context.exception.args[0], expected_message)
