@@ -46,7 +46,8 @@ def map_datatypes():
 def do_problem(target_embedding: np.ndarray,
                pop_size=1000,
                n_generations=30,
-               initialize_from_dataset=False):
+               initialize_from_dataset=False,
+               sample_from_dataset=False):
     features_dataset = FEATURES.drop(columns=CONSTANT_COLUMNS)
     data_package = DataPackage(features_dataset=features_dataset,
                                predictions_dataset=pd.DataFrame(get_labels(target_embedding),
@@ -70,8 +71,8 @@ def do_problem(target_embedding: np.ndarray,
     generator.generate(n_generations=n_generations)
     return generator.sample_with_dtai(num_samples=10, gower_weight=1,
                                       avg_gower_weight=1, cfc_weight=1,
-                                      diversity_weight=50,
-                                      include_dataset=False)
+                                      diversity_weight=1,
+                                      include_dataset=sample_from_dataset)
 
 
 if __name__ == "__main__":
@@ -80,7 +81,8 @@ if __name__ == "__main__":
     cfs = do_problem(embedding_calculator.from_text(target_text).reshape((512,)),
                      pop_size=2000,
                      n_generations=100,
-                     initialize_from_dataset=True
+                     initialize_from_dataset=True,
+                     sample_from_dataset=True
                      )
-    with open(f"{target_text}_result.csv", "w") as file:
+    with open(f"run-results/{target_text}_result.csv", "w") as file:
         cfs.to_csv(file)
