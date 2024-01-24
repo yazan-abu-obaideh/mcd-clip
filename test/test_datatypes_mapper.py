@@ -1,7 +1,7 @@
 import unittest
 
 import pandas as pd
-from pymoo.core.variable import Real, Binary, Integer
+from pymoo.core.variable import Real, Integer, Choice
 
 from datatypes_mapper import map_column
 
@@ -34,4 +34,4 @@ class MapperTest(unittest.TestCase):
         series[1] = True
         series = series.astype(dtype="bool")
         mapped_type = map_column(series)
-        self.assertTrue(type(mapped_type) is Binary)
+        self.assertTrue(type(mapped_type) is Choice)

@@ -1,12 +1,12 @@
 import os.path
 
 import pandas as pd
-from pymoo.core.variable import Real, Integer, Binary
+from pymoo.core.variable import Real, Integer, Choice
 
 MAPPINGS = {
     "float64": lambda lower_bound, upper_bound: Real(bounds=(lower_bound, upper_bound)),
     "int64": lambda lower_bound, upper_bound: Integer(bounds=(lower_bound, upper_bound)),
-    "bool": lambda x1, x2: Binary()
+    "bool": lambda x1, x2: Choice(options=(0, 1))
 }
 
 path = os.path.join(os.path.dirname(__file__), "resources", "clip_sBIKED_processed_datatypes.csv")
