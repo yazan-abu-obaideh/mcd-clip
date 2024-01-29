@@ -1,5 +1,3 @@
-import os.path
-
 import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, CounterfactualsGenerator, ContinuousTarget
@@ -8,6 +6,7 @@ import clip_embedding_calculator
 from datatypes_mapper import map_column
 from embedding_comparator import get_cosine_similarity
 from embedding_predictor import EmbeddingPredictor
+from resource_utils import resource_path
 
 PREDICTOR = EmbeddingPredictor()
 
@@ -16,8 +15,7 @@ CONSTANT_COLUMNS = ['Wall thickness Bottom Bracket', 'Wall thickness Top tube',
 
 
 def get_features():
-    return pd.read_csv(os.path.join(os.path.dirname(__file__), "resources", "clip_sBIKED_processed.csv"),
-                       index_col=0)
+    return pd.read_csv(resource_path("clip_sBIKED_processed.csv"), index_col=0)
 
 
 FEATURES = get_features()
@@ -77,10 +75,10 @@ def do_problem(target_embedding: np.ndarray,
 
 if __name__ == "__main__":
     embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
-    target_text = "Black bicycle"
+    target_text = "A futuristic black cyberpunk-style road racing bicycle"
     cfs = do_problem(embedding_calculator.from_text(target_text).reshape((512,)),
-                     pop_size=2000,
-                     n_generations=100,
+                     pop_size=100,
+                     n_generations=400,
                      initialize_from_dataset=True,
                      sample_from_dataset=True
                      )

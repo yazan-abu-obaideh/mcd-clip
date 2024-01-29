@@ -1,10 +1,11 @@
-import os.path
+import __main__
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import __main__
+
+from resource_utils import resource_path
 
 
 class _ResidualBlock(nn.Module):
@@ -51,7 +52,7 @@ __main__.ResidualNetwork = _ResidualNetwork
 __main__.ResidualBlock = _ResidualBlock
 
 _DEVICE = torch.device('cpu')
-_MODEL_FUNCTION_PATH = os.path.join(os.path.dirname(__file__), "resources", "resnet_0010_0005.pt")
+_MODEL_FUNCTION_PATH = resource_path("resnet_0010_0005.pt")
 _MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
 
 
