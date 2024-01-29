@@ -1,7 +1,7 @@
 import unittest
 
-import clip_embedding_calculator
-from embedding_similarity_optimizer import get_features, map_datatypes, do_problem
+from embedding import clip_embedding_calculator
+from embedding.embedding_similarity_optimizer import get_features, map_datatypes, do_problem
 
 
 class EmbeddingSimilarityOptimizerTest(unittest.TestCase):

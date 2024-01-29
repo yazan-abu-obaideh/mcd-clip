@@ -3,7 +3,7 @@ import unittest
 
 import numpy as np
 
-from clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 
 BIKE_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "resources", "black_bicycle.jpeg")
 

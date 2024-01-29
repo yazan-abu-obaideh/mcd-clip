@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, CounterfactualsGenerator, ContinuousTarget
 
-import clip_embedding_calculator
 from datatypes_mapper import map_column
-from embedding_comparator import get_cosine_similarity
-from embedding_predictor import EmbeddingPredictor
+from embedding import clip_embedding_calculator
+from embedding.embedding_comparator import get_cosine_similarity
+from embedding.embedding_predictor import EmbeddingPredictor
 from resource_utils import resource_path
 
 PREDICTOR = EmbeddingPredictor()

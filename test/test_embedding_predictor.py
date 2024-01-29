@@ -3,7 +3,7 @@ import unittest
 
 import pandas as pd
 
-from embedding_predictor import EmbeddingPredictor
+from embedding.embedding_predictor import EmbeddingPredictor
 
 
 def get_test_resource_path(resource_name) -> str:

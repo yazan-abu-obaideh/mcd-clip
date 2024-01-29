@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import numpy.testing as np_test
 
-from embedding_comparator import get_cosine_similarity
+from embedding.embedding_comparator import get_cosine_similarity
 
 
 class EmbeddingComparatorTest(unittest.TestCase):

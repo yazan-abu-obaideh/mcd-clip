@@ -1,8 +1,8 @@
 import cProfile
 
-import clip_embedding_calculator
+from embedding import clip_embedding_calculator
 # noinspection PyUnresolvedReferences
-from embedding_similarity_optimizer import do_problem
+from embedding.embedding_similarity_optimizer import do_problem
 
 if __name__ == "__main__":
     embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
