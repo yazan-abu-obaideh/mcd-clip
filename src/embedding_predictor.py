@@ -7,9 +7,9 @@ import torch.nn as nn
 import __main__
 
 
-class ResidualBlock(nn.Module):
+class _ResidualBlock(nn.Module):
     def __init__(self, input_size, layer_size, num_layers):
-        super(ResidualBlock, self).__init__()
+        super(_ResidualBlock, self).__init__()
         self.layers = self._make_layers(input_size, layer_size, num_layers)
 
     def _make_layers(self, input_size, layer_size, num_layers):
@@ -27,9 +27,9 @@ class ResidualBlock(nn.Module):
         return total
 
 
-class ResidualNetwork(nn.Module):
+class _ResidualNetwork(nn.Module):
     def __init__(self, input_size, output_size, layer_size, layers_per_block, num_blocks):
-        super(ResidualNetwork, self).__init__()
+        super(_ResidualNetwork, self).__init__()
         self.initial_layer = nn.Linear(input_size, layer_size)
         self.blocks = self._make_blocks(layer_size, layers_per_block, num_blocks)
         self.final_layer = nn.Linear(layer_size, output_size)
@@ -37,7 +37,7 @@ class ResidualNetwork(nn.Module):
     def _make_blocks(self, layer_size, layers_per_block, num_blocks):
         blocks = []
         for _ in range(num_blocks):
-            blocks.append(ResidualBlock(layer_size, layer_size, layers_per_block))
+            blocks.append(_ResidualBlock(layer_size, layer_size, layers_per_block))
         return nn.Sequential(*blocks)
 
     def forward(self, x):
@@ -47,8 +47,8 @@ class ResidualNetwork(nn.Module):
         return out
 
 
-__main__.ResidualNetwork = ResidualNetwork
-__main__.ResidualBlock = ResidualBlock
+__main__.ResidualNetwork = _ResidualNetwork
+__main__.ResidualBlock = _ResidualBlock
 
 _DEVICE = torch.device('cpu')
 _MODEL_FUNCTION_PATH = os.path.join(os.path.dirname(__file__), "resources", "resnet_0010_0005.pt")
