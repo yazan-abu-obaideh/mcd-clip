@@ -1,5 +1,5 @@
-from bike_rendering.bike_xml_handler import BikeXmlHandler
-from resource_utils import resource_path
+from mcd_clip.bike_rendering.bike_xml_handler import BikeXmlHandler
+from mcd_clip.resource_utils import resource_path
 
 OPTIMIZED_TO_CAD = {
     "ST Angle": "Seat angle",

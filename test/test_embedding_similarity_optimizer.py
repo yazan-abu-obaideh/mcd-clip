@@ -1,7 +1,7 @@
 import unittest
 
-from bike_embedding import clip_embedding_calculator
-from bike_embedding.embedding_similarity_optimizer import get_features, map_datatypes, do_problem
+from mcd_clip.bike_embedding import clip_embedding_calculator
+from mcd_clip.bike_embedding.embedding_similarity_optimizer import get_features, map_datatypes, do_problem
 
 
 class EmbeddingSimilarityOptimizerTest(unittest.TestCase):

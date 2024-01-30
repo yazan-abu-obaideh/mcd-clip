@@ -5,7 +5,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
-from resource_utils import resource_path
+from mcd_clip.resource_utils import resource_path
 
 
 class _ResidualBlock(nn.Module):

@@ -1,7 +1,7 @@
 import pandas as pd
 from pymoo.core.variable import Real, Integer, Choice
 
-from resource_utils import resource_path
+from mcd_clip.resource_utils import resource_path
 
 _MAPPINGS = {
     "float64": lambda lower_bound, upper_bound: Real(bounds=(lower_bound, upper_bound)),

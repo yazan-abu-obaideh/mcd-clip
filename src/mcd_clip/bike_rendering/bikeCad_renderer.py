@@ -7,7 +7,7 @@ import threading
 import uuid
 from asyncio import subprocess
 
-from bike_rendering.cad_builder import BikeCadFileBuilder
+from mcd_clip.bike_rendering.cad_builder import BikeCadFileBuilder
 
 TEMP_DIR = "bikes"
 

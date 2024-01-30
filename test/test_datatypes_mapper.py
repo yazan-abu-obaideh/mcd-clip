@@ -3,7 +3,7 @@ import unittest
 import pandas as pd
 from pymoo.core.variable import Real, Integer, Choice
 
-from clips_dataset_utils.datatypes_mapper import map_column
+from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
 
 
 class MapperTest(unittest.TestCase):

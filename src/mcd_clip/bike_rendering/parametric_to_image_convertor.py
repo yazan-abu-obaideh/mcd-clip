@@ -1,7 +1,7 @@
 import pandas as pd
 
-from bike_rendering.bike_xml_handler import BikeXmlHandler
-from resource_utils import resource_path
+from mcd_clip.bike_rendering.bike_xml_handler import BikeXmlHandler
+from mcd_clip.resource_utils import resource_path
 
 ONE_HOT_ENCODED_VALUES = ['MATERIAL', 'Dropout spacing style',
                           'Head tube type', 'BELTorCHAIN',

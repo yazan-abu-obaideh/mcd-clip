@@ -3,7 +3,7 @@ import unittest
 
 import pandas as pd
 
-from bike_embedding.embedding_predictor import EmbeddingPredictor
+from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
 
 
 def get_test_resource_path(resource_name) -> str:
