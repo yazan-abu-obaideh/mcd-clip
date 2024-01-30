@@ -8,6 +8,7 @@ import uuid
 from asyncio import subprocess
 
 from mcd_clip.bike_rendering.cad_builder import BikeCadFileBuilder
+from mcd_clip.resource_utils import resource_path
 
 TEMP_DIR = "bikes"
 
@@ -92,7 +93,7 @@ class BikeCad:
         self._run("pnglist<>" + "<>".join(files) + "\n")
 
     async def _init_instance(self):
-        command = f"java -Djava.awt.headless=false -jar  {os.path.dirname(__file__)}/console_BikeCAD_final.jar"
+        command = f"java -Djava.awt.headless=false -jar  {resource_path('BikeCAD.jar')}"
         process = await asyncio.create_subprocess_shell(bytes(command, 'utf-8'),
                                                         stdin=subprocess.PIPE,
                                                         stdout=subprocess.PIPE,

@@ -6,7 +6,7 @@ from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
 from mcd_clip.bike_embedding import clip_embedding_calculator
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
-from mcd_clip.resource_utils import resource_path
+from mcd_clip.resource_utils import resource_path, run_result_path
 
 PREDICTOR = EmbeddingPredictor()
 
@@ -75,12 +75,12 @@ def do_problem(target_embedding: np.ndarray,
 
 if __name__ == "__main__":
     embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
-    target_text = "A futuristic black cyberpunk-style road racing bicycle"
+    target_text = "A road bike with curvy handles and thick tires"
     cfs = do_problem(embedding_calculator.from_text(target_text).reshape((512,)),
                      pop_size=100,
-                     n_generations=400,
+                     n_generations=500,
                      initialize_from_dataset=True,
                      sample_from_dataset=True
                      )
-    with open(f"run-results/{target_text}_result.csv", "w") as file:
+    with open(run_result_path(f"{target_text}_results.csv"), "w") as file:
         cfs.to_csv(file)
