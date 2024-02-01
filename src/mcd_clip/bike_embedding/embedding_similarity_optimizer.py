@@ -54,7 +54,7 @@ def do_problem(target_embedding: np.ndarray,
                                query_x=FEATURES.iloc[0:1].drop(columns=CONSTANT_COLUMNS),
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
                                                                               lower_bound=0,
-                                                                              upper_bound=0.2)]),
+                                                                              upper_bound=1)]),
                                datatypes=map_datatypes(),
                                bonus_objectives=["cosine_distance"])
 
@@ -75,10 +75,10 @@ def do_problem(target_embedding: np.ndarray,
 
 if __name__ == "__main__":
     embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
-    target_text = "A road bike with curvy handles and thick tires"
+    target_text = "A road bike with angled handles and small tires"
     cfs = do_problem(embedding_calculator.from_text(target_text).reshape((512,)),
                      pop_size=100,
-                     n_generations=500,
+                     n_generations=1500,
                      initialize_from_dataset=True,
                      sample_from_dataset=True
                      )
