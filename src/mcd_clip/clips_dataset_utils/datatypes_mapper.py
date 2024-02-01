@@ -15,4 +15,4 @@ _NAME_TO_TYPE = pd.read_csv(resource_path("clip_sBIKED_processed_datatypes.csv")
 
 def map_column(column: pd.Series):
     column_datatype = _NAME_TO_TYPE.loc[column.name].values[0]
-    return _MAPPINGS[column_datatype](column.min(), column.max())
+    return _MAPPINGS[column_datatype](column.quantile(0.01), column.quantile(0.99))

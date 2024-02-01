@@ -2,10 +2,9 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, CounterfactualsGenerator, ContinuousTarget
 
-from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
-from mcd_clip.bike_embedding import clip_embedding_calculator
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
+from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
 from mcd_clip.resource_utils import resource_path, run_result_path
 
 PREDICTOR = EmbeddingPredictor()
@@ -41,11 +40,11 @@ def map_datatypes():
     return datatypes
 
 
-def optimize_similarity(target_embedding: np.ndarray,
-                        pop_size=1000,
-                        n_generations=30,
-                        initialize_from_dataset=False,
-                        sample_from_dataset=False):
+def build_generator(target_embedding: np.ndarray,
+                    pop_size=1000,
+                    n_generations=30,
+                    initialize_from_dataset=False,
+                    sample_from_dataset=False):
     features_dataset = FEATURES.drop(columns=CONSTANT_COLUMNS)
     data_package = DataPackage(features_dataset=features_dataset,
                                predictions_dataset=pd.DataFrame(get_labels(target_embedding),
@@ -54,7 +53,7 @@ def optimize_similarity(target_embedding: np.ndarray,
                                query_x=FEATURES.iloc[0:1].drop(columns=CONSTANT_COLUMNS),
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
                                                                               lower_bound=0,
-                                                                              upper_bound=0.75)]),
+                                                                              upper_bound=1)]),
                                datatypes=map_datatypes(),
                                bonus_objectives=["cosine_distance"])
 
@@ -62,12 +61,24 @@ def optimize_similarity(target_embedding: np.ndarray,
                                     prediction_function=lambda design: predict(design, target_embedding),
                                     constraint_functions=[])
 
-    generator = CounterfactualsGenerator(problem=problem,
-                                         pop_size=pop_size,
-                                         initialize_from_dataset=initialize_from_dataset)
+    return CounterfactualsGenerator(problem=problem,
+                                    pop_size=pop_size,
+                                    initialize_from_dataset=initialize_from_dataset)
 
+
+def optimize_similarity(target_embedding: np.ndarray,
+                        pop_size=1000,
+                        n_generations=30,
+                        initialize_from_dataset=False,
+                        sample_from_dataset=False):
+    generator = build_generator(target_embedding,
+                                pop_size,
+                                n_generations,
+                                initialize_from_dataset,
+                                sample_from_dataset)
     generator.generate(n_generations=n_generations)
-    return generator.sample_with_dtai(num_samples=25, gower_weight=1,
+    generator.save(run_result_path('generator-saved'))
+    return generator.sample_with_dtai(num_samples=1000, gower_weight=1,
                                       avg_gower_weight=1, cfc_weight=1,
                                       diversity_weight=1,
                                       include_dataset=sample_from_dataset)

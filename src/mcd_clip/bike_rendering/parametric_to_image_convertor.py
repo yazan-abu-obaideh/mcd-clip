@@ -51,7 +51,10 @@ class ParametricToImageConvertor:
         for k, v in bike_dict.items():
             if k in all_bike_keys:
                 num_updated += 1
+                if str(v).lower() == 'nan':
+                    continue
                 if type(v) in [int, float]:
+                    print(v)
                     v = int(v)
                 handled = self._handle_bool(str(v))
                 print(f"Updating {k} with value {handled}")
