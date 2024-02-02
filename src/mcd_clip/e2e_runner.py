@@ -1,4 +1,5 @@
 import os
+import random
 import uuid
 
 import pandas as pd
@@ -46,7 +47,7 @@ def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_re
 
 
 def run_counterfactual_generation_task():
-    target_text = "A cool blue bike"
+    target_text = "A cool black bike"
     total_generations = 600
     number_of_batches = 3
     run_id = str(uuid.uuid4().fields[-1])[:5]
@@ -66,7 +67,7 @@ def run_counterfactual_generation_task():
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
         generator.generate(n_generations=cumulative_gens,
-                           seed=42)
+                           seed=random.randint(1, 300))
         # generator.save(os.path.join(results_dir, f"generator_{cumulative_gens}"))
         _attempt_sample_and_render(generator, results_dir, i)
 
