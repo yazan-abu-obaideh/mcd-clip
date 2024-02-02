@@ -23,7 +23,7 @@ class ClipEmbeddingCalculator(metaclass=abc.ABCMeta):
 
 class ClipEmbeddingCalculatorImpl(ClipEmbeddingCalculator):
     def from_text(self, text: str) -> np.ndarray:
-        return _MODEL.get_text_features(**_TOKENIZER(text, return_tensors="pt")).detach().numpy()
+        return _MODEL.get_text_features(**_TOKENIZER(text, return_tensors="pt")).detach().numpy().reshape((512,))
 
     def from_image_path(self, image_path: str) -> np.ndarray:
         img = Image.open(image_path).convert("RGB")

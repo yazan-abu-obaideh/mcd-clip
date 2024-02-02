@@ -13,6 +13,6 @@ class EmbeddingSimilarityOptimizerTest(unittest.TestCase):
 
     def test_no_errors_thrown_when_run(self):
         embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
-        optimize_similarity(embedding_calculator.from_text("Black bicycle").reshape((512,)),
+        optimize_similarity(embedding_calculator.from_text("Black bicycle"),
                             pop_size=5, n_generations=3
                             )

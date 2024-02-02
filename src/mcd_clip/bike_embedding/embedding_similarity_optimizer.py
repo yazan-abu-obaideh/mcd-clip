@@ -18,6 +18,7 @@ def get_features():
 
 
 FEATURES = get_features()
+TRIMMED_FEATURES = FEATURES.drop(columns=CONSTANT_COLUMNS)
 
 
 def get_labels(target_embedding: np.ndarray):
@@ -26,10 +27,15 @@ def get_labels(target_embedding: np.ndarray):
 
 
 def predict(designs, target_embedding):
-    designs_copy = designs.copy().astype("float64")
+    designs_copy = to_full_dataframe(designs)
+    return 1 - get_cosine_similarity(PREDICTOR.predict(designs_copy), target_embedding)
+
+
+def to_full_dataframe(designs):
+    designs_copy = pd.DataFrame(designs, columns=TRIMMED_FEATURES.columns)
     for column in CONSTANT_COLUMNS:
         designs_copy[column] = FEATURES[column].mean()
-    return 1 - get_cosine_similarity(PREDICTOR.predict(designs_copy), target_embedding)
+    return designs_copy
 
 
 def map_datatypes():
@@ -43,15 +49,14 @@ def map_datatypes():
 def build_generator(target_embedding: np.ndarray,
                     pop_size=1000,
                     initialize_from_dataset=False):
-    features_dataset = FEATURES.drop(columns=CONSTANT_COLUMNS)
-    data_package = DataPackage(features_dataset=features_dataset,
+    data_package = DataPackage(features_dataset=TRIMMED_FEATURES,
                                predictions_dataset=pd.DataFrame(get_labels(target_embedding),
                                                                 columns=["cosine_distance"],
-                                                                index=features_dataset.index),
+                                                                index=TRIMMED_FEATURES.index),
                                query_x=FEATURES.iloc[0:1].drop(columns=CONSTANT_COLUMNS),
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
                                                                               lower_bound=0,
-                                                                              upper_bound=1)]),
+                                                                              upper_bound=0.75)]),
                                datatypes=map_datatypes(),
                                bonus_objectives=["cosine_distance"])
 

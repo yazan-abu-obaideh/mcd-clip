@@ -20,4 +20,4 @@ class ClipEmbeddingCalculatorTest(unittest.TestCase):
 
     def assertValidEmbedding(self, embedding):
         self.assertTrue(type(embedding) is np.ndarray)
-        self.assertEqual((1, 512), embedding.shape)
+        self.assertEqual((512,), embedding.shape)
