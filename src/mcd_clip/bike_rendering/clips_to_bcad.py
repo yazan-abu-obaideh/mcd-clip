@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def deconvert(df: pd.DataFrame):
+def clips_to_cad(df: pd.DataFrame):
     if "csd" in df.columns:
         df["Chain stay back diameter"] = df["csd"]
         df["Chain stay vertical diameter"] = df["csd"]

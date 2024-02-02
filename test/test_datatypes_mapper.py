@@ -12,22 +12,22 @@ class MapperTest(unittest.TestCase):
         series.name = "Head angle"
         column_type = map_column(series)
         self.assertTrue(type(column_type) is Real)
-        self.assertEqual(15, column_type.bounds[0])
-        self.assertEqual(25, column_type.bounds[1])
+        self.assertPercentileBounds(column_type)
 
     def test_integer_mapping(self):
         series = pd.Series(data=[15, 25], dtype="int64")
         series.name = "Number of chainrings"
         column_type = map_column(series)
         self.assertTrue(type(column_type) is Integer)
-        self.assertEqual(15, column_type.bounds[0])
-        self.assertEqual(25, column_type.bounds[1])
+        self.assertPercentileBounds(column_type)
 
     def test_bool_mapping(self):
         series = pd.Series(data=[False, True], dtype="bool")
         series.name = "CHAINSTAYbrdgCheck"
-        # series[0] = False
-        # series[1] = True
         series = series.astype(dtype="bool")
         mapped_type = map_column(series)
         self.assertTrue(type(mapped_type) is Choice)
+
+    def assertPercentileBounds(self, column_type):
+        self.assertEqual(15.1, column_type.bounds[0])
+        self.assertEqual(24.9, column_type.bounds[1])
