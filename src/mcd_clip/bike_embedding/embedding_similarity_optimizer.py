@@ -33,6 +33,7 @@ def predict(designs, target_embedding):
 
 def to_full_dataframe(designs):
     designs_copy = pd.DataFrame(designs, columns=TRIMMED_FEATURES.columns)
+    designs_copy = designs_copy.fillna(designs_copy.mean())
     for column in CONSTANT_COLUMNS:
         designs_copy[column] = FEATURES[column].mean()
     return designs_copy
@@ -56,7 +57,7 @@ def build_generator(target_embedding: np.ndarray,
                                query_x=FEATURES.iloc[0:1].drop(columns=CONSTANT_COLUMNS),
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
                                                                               lower_bound=0,
-                                                                              upper_bound=0.75)]),
+                                                                              upper_bound=0.85)]),
                                datatypes=map_datatypes(),
                                bonus_objectives=["cosine_distance"])
 

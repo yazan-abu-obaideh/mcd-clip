@@ -19,3 +19,7 @@ class EmbeddingPredictorTest(unittest.TestCase):
     def test_predictor(self):
         predictions = self.embedding_predictor.predict(self.parameters)
         print(predictions)
+
+    @unittest.skip
+    def test_handles_nan(self):
+        pass

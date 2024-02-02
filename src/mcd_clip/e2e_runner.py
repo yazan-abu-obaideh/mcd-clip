@@ -17,7 +17,7 @@ IMAGE_CONVERTOR = ParametricToImageConvertor()
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
     try:
-        return generator.sample_with_weights(1000, 1, 1, 1, 1)
+        return generator.sample_with_weights(100_000, 1, 1, 1, 1)
     except ValueError:
         print("MCD failed to sample. Returning empty dataframe...")
         return pd.DataFrame()
@@ -25,14 +25,20 @@ def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
 
 def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: str, batch_number: int):
     counterfactuals = to_full_dataframe(_get_counterfactuals(generator))
+    batch_result_dir = _make_batch_dir(batch_number, result_dir)
+    counterfactuals.to_csv(path_or_buf=os.path.join(batch_result_dir, "counterfactuals.csv"))
     for cf_index in counterfactuals.index:
         rendering_result = IMAGE_CONVERTOR.to_image(counterfactuals.loc[cf_index])
-        _save_rendering_result(cf_index, rendering_result, result_dir, batch_number)
+        _save_rendering_result(cf_index, rendering_result, batch_result_dir)
 
 
-def _save_rendering_result(cf_index, rendering_result: RenderingResult, result_dir, batch_number: int):
+def _make_batch_dir(batch_number, result_dir):
     batch_result_dir = os.path.join(result_dir, f"_batch_{batch_number}")
     os.makedirs(batch_result_dir, exist_ok=True)
+    return batch_result_dir
+
+
+def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_result_dir):
     with open(os.path.join(batch_result_dir, f"bike_{cf_index}.txt"), "w") as text_file:
         text_file.write(rendering_result.bike_xml)
     with open(os.path.join(batch_result_dir, f"bike_{cf_index}.png"), "wb") as image_file:
@@ -40,9 +46,9 @@ def _save_rendering_result(cf_index, rendering_result: RenderingResult, result_d
 
 
 def run_counterfactual_generation_task():
-    target_text = "A cool green bike"
-    total_generations = 3000
-    number_of_batches = 15
+    target_text = "A cool blue bike"
+    total_generations = 600
+    number_of_batches = 3
     run_id = str(uuid.uuid4().fields[-1])[:5]
 
     assert total_generations > number_of_batches
@@ -61,7 +67,7 @@ def run_counterfactual_generation_task():
         cumulative_gens = batch_size * i
         generator.generate(n_generations=cumulative_gens,
                            seed=42)
-        generator.save(os.path.join(results_dir, f"generator_{cumulative_gens}"))
+        # generator.save(os.path.join(results_dir, f"generator_{cumulative_gens}"))
         _attempt_sample_and_render(generator, results_dir, i)
 
 
