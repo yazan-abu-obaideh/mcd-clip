@@ -42,9 +42,7 @@ def map_datatypes():
 
 def build_generator(target_embedding: np.ndarray,
                     pop_size=1000,
-                    n_generations=30,
-                    initialize_from_dataset=False,
-                    sample_from_dataset=False):
+                    initialize_from_dataset=False):
     features_dataset = FEATURES.drop(columns=CONSTANT_COLUMNS)
     data_package = DataPackage(features_dataset=features_dataset,
                                predictions_dataset=pd.DataFrame(get_labels(target_embedding),
@@ -73,9 +71,7 @@ def optimize_similarity(target_embedding: np.ndarray,
                         sample_from_dataset=False):
     generator = build_generator(target_embedding,
                                 pop_size,
-                                n_generations,
-                                initialize_from_dataset,
-                                sample_from_dataset)
+                                initialize_from_dataset)
     generator.generate(n_generations=n_generations)
     generator.save(run_result_path('generator-saved'))
     return generator.sample_with_dtai(num_samples=1000, gower_weight=1,
