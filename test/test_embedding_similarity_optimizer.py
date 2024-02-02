@@ -1,5 +1,7 @@
 import unittest
 
+from pymoo.core.variable import Real, Variable, Choice, Integer
+
 from mcd_clip.bike_embedding import clip_embedding_calculator
 from mcd_clip.bike_embedding.embedding_similarity_optimizer import get_features, map_datatypes, optimize_similarity
 
@@ -9,7 +11,25 @@ class EmbeddingSimilarityOptimizerTest(unittest.TestCase):
         print(get_features())
 
     def test_map_datatypes(self):
-        print(map_datatypes())
+        types_string = ""
+        for t in map_datatypes():
+            types_string += self._t_to_string(t)
+        self.assertEqual(
+            "RRRRRRRRRRRRRRRRRRRRRRRCCRRRRRRRRRRCRRRRCCIICIIIIRRRRRICCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            types_string
+        )
+        self.assertEqual(len(types_string), 92)
+
+    def _t_to_string(self, t: Variable):
+        if type(t) is Real:
+            print(f"R {t.bounds}")
+            return 'R'
+        if type(t) is Integer:
+            print(f"I {t.bounds}")
+            return 'I'
+        if type(t) is Choice:
+            print(f"Choice {t.options}")
+            return 'C'
 
     def test_no_errors_thrown_when_run(self):
         embedding_calculator = clip_embedding_calculator.ClipEmbeddingCalculatorImpl()
