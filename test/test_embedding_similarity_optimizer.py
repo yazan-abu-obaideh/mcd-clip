@@ -14,11 +14,11 @@ class EmbeddingSimilarityOptimizerTest(unittest.TestCase):
         types_string = ""
         for t in map_datatypes():
             types_string += self._t_to_string(t)
+        self.assertEqual(len(types_string), 89)
         self.assertEqual(
-            "RRRRRRRRRRRRRRRRRRRRRRRCCRRRRRRRRRRCRRRRCCIICIIIIRRRRRICCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
+            "RRRRRRRRRRRRRRRRRRRRRRRCCRRRRRRRCRRRRCCIICIIIIRRRRRICCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC",
             types_string
         )
-        self.assertEqual(len(types_string), 92)
 
     def _t_to_string(self, t: Variable):
         if type(t) is Real:

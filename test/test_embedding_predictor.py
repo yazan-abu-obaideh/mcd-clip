@@ -2,6 +2,7 @@ import os.path
 import unittest
 
 import pandas as pd
+import numpy.testing as np_test
 
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
 
@@ -18,7 +19,19 @@ class EmbeddingPredictorTest(unittest.TestCase):
 
     def test_predictor(self):
         predictions = self.embedding_predictor.predict(self.parameters)
-        print(predictions)
+        self.assertEqual(predictions.shape, (len(self.parameters), 512))
+
+    def test_order_does_not_matter(self):
+        data = self.parameters.iloc[0:1]
+        predictions_og = self.embedding_predictor.predict(data)
+        first_column = list(data.columns)[0]
+        modified_data = data.drop(labels=[first_column], axis=1)
+        modified_data[first_column] = data[first_column]
+        reordered_predictions = self.embedding_predictor.predict(modified_data)
+        np_test.assert_array_equal(
+            predictions_og,
+            reordered_predictions
+        )
 
     @unittest.skip
     def test_handles_nan(self):

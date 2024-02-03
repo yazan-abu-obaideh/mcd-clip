@@ -5,6 +5,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 
+from mcd_clip.bike_embedding.ordered_columns import ORDERED_COLUMNS
 from mcd_clip.resource_utils import resource_path
 
 
@@ -59,6 +60,7 @@ _MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
 class EmbeddingPredictor:
 
     def predict(self, x: pd.DataFrame) -> np.ndarray:
-        tensor = torch.tensor(x.values, dtype=torch.float32)
+        ordered = pd.DataFrame(x, columns=ORDERED_COLUMNS)
+        tensor = torch.tensor(ordered.values, dtype=torch.float32)
         result_tensor = _MODEL_FUNCTION(tensor).cpu()
         return result_tensor.detach().numpy()
