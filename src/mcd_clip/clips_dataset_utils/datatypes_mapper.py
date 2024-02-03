@@ -16,4 +16,6 @@ def map_column(column: pd.Series):
     column_datatype = _NAME_TO_TYPE.loc[column.name].values[0]
     if column_datatype == "bool":
         return Choice(options=(0, 1))
+    if column.quantile(0.01) == column.quantile(0.99):
+        print(f"Warning: {column.name} has a range of 0")
     return _NUMERIC_MAPPINGS[column_datatype](column.quantile(0.01), column.quantile(0.99))

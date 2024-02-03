@@ -1,16 +1,17 @@
 import os
-import random
 import uuid
 
+import numpy as np
 import pandas as pd
 from decode_mcd import CounterfactualsGenerator
 
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-
-from mcd_clip.bike_embedding.embedding_similarity_optimizer import build_generator, to_full_dataframe
+from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
+from mcd_clip.bike_embedding.embedding_similarity_optimizer import build_generator, to_full_dataframe, PREDICTOR
 from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor, RenderingResult
-
 from mcd_clip.resource_utils import run_result_path
+
+SIMILARITY = 'cosine_similarity'
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 IMAGE_CONVERTOR = ParametricToImageConvertor()
@@ -18,22 +19,42 @@ IMAGE_CONVERTOR = ParametricToImageConvertor()
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
     try:
-        return generator.sample_with_weights(100_000, 1, 1, 1, 1)
+        return generator.sample_with_weights(100_000,
+                                             1,
+                                             1,
+                                             1,
+                                             1,
+                                             include_dataset=False)
     except ValueError:
         print("MCD failed to sample. Returning empty dataframe...")
         return pd.DataFrame()
 
 
-def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: str, batch_number: int):
+def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: str, batch_number: int,
+                               target_embedding: np.ndarray):
     counterfactuals = to_full_dataframe(_get_counterfactuals(generator))
     batch_result_dir = _make_batch_dir(batch_number, result_dir)
     counterfactuals.to_csv(path_or_buf=os.path.join(batch_result_dir, "counterfactuals.csv"))
-    for cf_index in counterfactuals.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(counterfactuals.loc[cf_index])
+    closest_counterfactuals = _get_extreme_counterfactuals(counterfactuals, target_embedding)
+    for cf_index in closest_counterfactuals.index:
+        rendering_result = IMAGE_CONVERTOR.to_image(closest_counterfactuals.loc[cf_index])
         _save_rendering_result(cf_index, rendering_result, batch_result_dir)
 
 
-def _make_batch_dir(batch_number, result_dir):
+def _get_extreme_counterfactuals(counterfactuals, target_embedding: np.ndarray):
+    sample_size = min(len(counterfactuals), 10)
+    counterfactuals[SIMILARITY] = get_cosine_similarity(
+        PREDICTOR.predict(counterfactuals),
+        target_embedding
+    )
+    closest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=False)[:sample_size//2]
+    print(f"Closest counterfactuals found: {closest_cfs[SIMILARITY]}")
+    furthest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=True)[:sample_size//2]
+    print(f"Furthest counterfactuals found: {furthest_cfs[SIMILARITY]}")
+    return pd.concat([closest_cfs, furthest_cfs])
+
+
+def _make_batch_dir(batch_number: int, result_dir: str):
     batch_result_dir = os.path.join(result_dir, f"_batch_{batch_number}")
     os.makedirs(batch_result_dir, exist_ok=True)
     return batch_result_dir
@@ -47,19 +68,21 @@ def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_re
 
 
 def run_counterfactual_generation_task():
-    target_text = "A cool black bike"
-    total_generations = 600
-    number_of_batches = 3
-    run_id = str(uuid.uuid4().fields[-1])[:5]
+    target_text = "A green bicycle"
+    total_generations = 750
+    number_of_batches = 5
+    run_id = target_text.lower().replace(' ', "-") + "-" + (str(uuid.uuid4().fields[-1])[:5])
 
     assert total_generations > number_of_batches
     assert total_generations % number_of_batches == 0
 
     batch_size = total_generations // number_of_batches
 
+    target_embedding = EMBEDDING_CALCULATOR.from_text(target_text)
     generator = build_generator(pop_size=100,
                                 initialize_from_dataset=True,
-                                target_embedding=EMBEDDING_CALCULATOR.from_text(target_text))
+                                target_embedding=target_embedding,
+                                maximum_cosine_distance=1)
 
     results_dir = run_result_path(run_id)
     os.makedirs(results_dir, exist_ok=False)
@@ -67,9 +90,9 @@ def run_counterfactual_generation_task():
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
         generator.generate(n_generations=cumulative_gens,
-                           seed=random.randint(1, 300))
+                           seed=42)
         # generator.save(os.path.join(results_dir, f"generator_{cumulative_gens}"))
-        _attempt_sample_and_render(generator, results_dir, i)
+        _attempt_sample_and_render(generator, results_dir, i, target_embedding)
 
 
 if __name__ == "__main__":
