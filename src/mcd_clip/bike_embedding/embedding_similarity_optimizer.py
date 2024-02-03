@@ -39,11 +39,7 @@ def to_full_dataframe(designs):
     designs_copy = designs_copy.fillna(TRIMMED_FEATURES.mean())
     for column in CONSTANT_COLUMNS:
         designs_copy[column] = FEATURES[column].mean()
-    return _to_correct_order(designs_copy)
-
-
-def _to_correct_order(features_dataframe: pd.DataFrame):
-    return pd.DataFrame(features_dataframe, columns=FEATURES.columns)
+    return designs_copy
 
 
 def map_datatypes():

@@ -35,23 +35,18 @@ def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: 
     counterfactuals = to_full_dataframe(_get_counterfactuals(generator))
     batch_result_dir = _make_batch_dir(batch_number, result_dir)
     counterfactuals.to_csv(path_or_buf=os.path.join(batch_result_dir, "counterfactuals.csv"))
-    closest_counterfactuals = _get_extreme_counterfactuals(counterfactuals, target_embedding)
+    closest_counterfactuals = _get_closest(counterfactuals, target_embedding)
     for cf_index in closest_counterfactuals.index:
         rendering_result = IMAGE_CONVERTOR.to_image(closest_counterfactuals.loc[cf_index])
         _save_rendering_result(cf_index, rendering_result, batch_result_dir)
 
 
-def _get_extreme_counterfactuals(counterfactuals, target_embedding: np.ndarray):
-    sample_size = min(len(counterfactuals), 10)
-    counterfactuals[SIMILARITY] = get_cosine_similarity(
-        PREDICTOR.predict(counterfactuals),
-        target_embedding
-    )
-    closest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=False)[:sample_size//2]
+def _get_closest(counterfactuals, target_embedding: np.ndarray):
+    sample_size = min(len(counterfactuals), 5)
+    counterfactuals[SIMILARITY] = get_cosine_similarity(PREDICTOR.predict(counterfactuals), target_embedding)
+    closest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=False)[:sample_size]
     print(f"Closest counterfactuals found: {closest_cfs[SIMILARITY]}")
-    furthest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=True)[:sample_size//2]
-    print(f"Furthest counterfactuals found: {furthest_cfs[SIMILARITY]}")
-    return pd.concat([closest_cfs, furthest_cfs])
+    return closest_cfs
 
 
 def _make_batch_dir(batch_number: int, result_dir: str):
@@ -67,11 +62,15 @@ def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_re
         image_file.write(rendering_result.image)
 
 
+def _build_run_id(target_text: str):
+    return target_text.lower().replace(' ', "-") + "-" + (str(uuid.uuid4().fields[-1])[:5])
+
+
 def run_counterfactual_generation_task():
-    target_text = "A green bicycle"
-    total_generations = 750
-    number_of_batches = 5
-    run_id = target_text.lower().replace(' ', "-") + "-" + (str(uuid.uuid4().fields[-1])[:5])
+    target_text = "A pink bicycle"
+    total_generations = 450
+    number_of_batches = 3
+    run_id = _build_run_id(target_text)
 
     assert total_generations > number_of_batches
     assert total_generations % number_of_batches == 0
@@ -82,7 +81,7 @@ def run_counterfactual_generation_task():
     generator = build_generator(pop_size=100,
                                 initialize_from_dataset=True,
                                 target_embedding=target_embedding,
-                                maximum_cosine_distance=1)
+                                maximum_cosine_distance=0.7)
 
     results_dir = run_result_path(run_id)
     os.makedirs(results_dir, exist_ok=False)

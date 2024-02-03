@@ -12,7 +12,8 @@ class EmbeddingSimilarityOptimizerTest(unittest.TestCase):
 
     def test_map_datatypes(self):
         types_string = ""
-        for t in map_datatypes():
+        mapped_datatypes = map_datatypes()
+        for t in mapped_datatypes:
             types_string += self._t_to_string(t)
         self.assertEqual(len(types_string), 89)
         self.assertEqual(
