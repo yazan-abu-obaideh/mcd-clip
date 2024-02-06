@@ -29,7 +29,7 @@ def get_labels(target_embedding: np.ndarray):
     return 1 - get_cosine_similarity(predictions, target_embedding)
 
 
-def predict(designs, target_embedding):
+def predict_cosine_distance(designs, target_embedding):
     designs_copy = to_full_dataframe(designs)
     return 1 - get_cosine_similarity(PREDICTOR.predict(designs_copy), target_embedding)
 
@@ -58,15 +58,16 @@ def build_generator(target_embedding: np.ndarray,
                                predictions_dataset=pd.DataFrame(get_labels(target_embedding),
                                                                 columns=["cosine_distance"],
                                                                 index=TRIMMED_FEATURES.index),
-                               query_x=FEATURES.iloc[0:1].drop(columns=CONSTANT_COLUMNS),
+                               query_x=TRIMMED_FEATURES.iloc[0:1],
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
-                                                                              lower_bound=-1,
+                                                                              lower_bound=0,
                                                                               upper_bound=maximum_cosine_distance)]),
                                datatypes=map_datatypes(),
                                bonus_objectives=["cosine_distance"])
 
     problem = MultiObjectiveProblem(data_package=data_package,
-                                    prediction_function=lambda design: predict(design, target_embedding),
+                                    prediction_function=lambda design:
+                                    predict_cosine_distance(design, target_embedding),
                                     constraint_functions=[])
 
     return CounterfactualsGenerator(problem=problem,

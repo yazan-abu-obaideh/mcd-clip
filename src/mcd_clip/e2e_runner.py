@@ -19,7 +19,7 @@ IMAGE_CONVERTOR = ParametricToImageConvertor()
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
     try:
-        return generator.sample_with_weights(100_000,
+        return generator.sample_with_weights(25,
                                              1,
                                              1,
                                              1,
@@ -66,25 +66,23 @@ def _build_run_id(target_text: str):
     return target_text.lower().replace(' ', "-") + "-" + (str(uuid.uuid4().fields[-1])[:5])
 
 
-def run_counterfactual_generation_task():
-    target_text = "A pink bicycle"
-    total_generations = 450
-    number_of_batches = 3
-    run_id = _build_run_id(target_text)
-
+def run_counterfactual_generation_task(target_bike_description,
+                                       total_generations,
+                                       number_of_batches):
     assert total_generations > number_of_batches
     assert total_generations % number_of_batches == 0
 
+    run_id = _build_run_id(target_bike_description)
+    results_dir = run_result_path(run_id)
+    os.makedirs(results_dir, exist_ok=False)
+
     batch_size = total_generations // number_of_batches
 
-    target_embedding = EMBEDDING_CALCULATOR.from_text(target_text)
+    target_embedding = EMBEDDING_CALCULATOR.from_text(target_bike_description)
     generator = build_generator(pop_size=100,
                                 initialize_from_dataset=True,
                                 target_embedding=target_embedding,
                                 maximum_cosine_distance=0.7)
-
-    results_dir = run_result_path(run_id)
-    os.makedirs(results_dir, exist_ok=False)
 
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
@@ -95,4 +93,8 @@ def run_counterfactual_generation_task():
 
 
 if __name__ == "__main__":
-    run_counterfactual_generation_task()
+    run_counterfactual_generation_task(
+        "A yellow bicycle with curved handles",
+        300,
+        3
+    )
