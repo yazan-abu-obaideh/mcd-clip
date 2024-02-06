@@ -12,3 +12,6 @@ class RenderingTest(unittest.TestCase):
         rendering_result = ParametricToImageConvertor().to_image(data.iloc[0])
         self.assertTrue(type(rendering_result.bike_xml) is str)
         self.assertTrue(type(rendering_result.image) is bytes)
+
+    def test_one_hot_encoded(self):
+        pass

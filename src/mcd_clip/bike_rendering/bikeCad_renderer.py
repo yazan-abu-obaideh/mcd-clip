@@ -7,7 +7,6 @@ import threading
 import uuid
 from asyncio import subprocess
 
-from mcd_clip.bike_rendering.cad_builder import BikeCadFileBuilder
 from mcd_clip.resource_utils import resource_path
 
 TEMP_DIR = "bikes"
@@ -21,16 +20,11 @@ RENDERER_TIMEOUT_GRANULARITY = 1
 
 
 class RenderingService:
-    def __init__(self, renderer_pool_size, cad_builder=BikeCadFileBuilder()):
+    def __init__(self, renderer_pool_size):
         os.makedirs(os.path.join(os.path.dirname(__file__), TEMP_DIR), exist_ok=True)
         self._renderer_pool = queue.Queue(maxsize=renderer_pool_size)
-        self.cad_builder = cad_builder
         for i in range(renderer_pool_size):
             self._renderer_pool.put(BikeCad())
-
-    def render_object(self, bike_object, seed_bike_id):
-        return self.render(self.cad_builder.build_cad_from_object(bike_object,
-                                                                  seed_bike_id))
 
     def render(self, bike_xml):
         renderer = self._get_renderer()

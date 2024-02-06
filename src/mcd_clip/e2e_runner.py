@@ -94,7 +94,7 @@ def run_counterfactual_generation_task(target_bike_description,
 
 if __name__ == "__main__":
     run_counterfactual_generation_task(
-        "A yellow bicycle with curved handles",
-        300,
+        "A yellow mountain bike",
+        450,
         3
     )
