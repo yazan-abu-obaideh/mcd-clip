@@ -5,3 +5,4 @@ all_parametric.csv
 **/*.egg-info
 **/build
 **/run-results/
+**/generated/
