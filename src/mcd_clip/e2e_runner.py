@@ -25,8 +25,8 @@ def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
                                              1,
                                              1,
                                              include_dataset=False)
-    except ValueError:
-        print("MCD failed to sample. Returning empty dataframe...")
+    except ValueError as e:
+        print(f"MCD failed to sample {e}. Returning empty dataframe...")
         return pd.DataFrame()
 
 
