@@ -45,6 +45,10 @@ class DatasetMergeTest(unittest.TestCase):
         indices = self._get_index_intersection()
         clip_indices = [int(idx) for idx in indices]
         b_columns = {c for c in b_columns if c not in ['Material']}
+        identical_biked = []
+        identical_clips = []
+        scaled_biked = []
+        scaled_clips = []
         for b_column in b_columns:
             for c_column in c_columns:
                 try:
@@ -54,15 +58,24 @@ class DatasetMergeTest(unittest.TestCase):
                             atol=1e-2
                     ).all()):
                         print(f"{b_column} has very close values to {c_column}")
+                        identical_biked.append(b_column)
+                        identical_clips.append(c_column)
                     elif np.isclose(
                             self.biked[b_column].loc[indices].values * 1000,
                             self.clips[c_column].loc[clip_indices].values,
                             atol=1e-2
                     ).all():
+                        scaled_biked.append(b_column)
+                        scaled_clips.append(c_column)
                         print(f"{b_column} when scaled has very close values to {c_column}")
                 except Exception as e:
                     print(f"Exception occurred because of {b_column} and {c_column}")
                     raise e
+
+        print(f"{identical_biked=}")
+        print(f"{identical_clips=}")
+        print(f"{scaled_biked=}")
+        print(f"{scaled_clips=}")
 
     def _get_index_intersection(self) -> List[str]:
         biked_idx_set = set(self.biked.index)
