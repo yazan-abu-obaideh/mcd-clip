@@ -1,5 +1,6 @@
 import os
 import uuid
+from traceback import print_exception
 
 import numpy as np
 import pandas as pd
@@ -9,7 +10,7 @@ from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalcu
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_similarity_optimizer import build_generator, to_full_dataframe, PREDICTOR
 from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor, RenderingResult
-from mcd_clip.resource_utils import run_result_path
+from mcd_clip.resource_utils import run_result_path, resource_path
 
 SIMILARITY = 'cosine_similarity'
 
@@ -26,7 +27,8 @@ def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
                                              1,
                                              include_dataset=False)
     except ValueError as e:
-        print(f"MCD failed to sample {e}. Returning empty dataframe...")
+        print(f"MCD failed to sample. Returning empty dataframe...")
+        print_exception(e)
         return pd.DataFrame()
 
 
@@ -78,7 +80,7 @@ def run_counterfactual_generation_task(target_bike_description,
 
     batch_size = total_generations // number_of_batches
 
-    target_embedding = EMBEDDING_CALCULATOR.from_text(target_bike_description)
+    target_embedding = EMBEDDING_CALCULATOR.from_image_path(resource_path('mtb.png'))
     generator = build_generator(pop_size=100,
                                 initialize_from_dataset=True,
                                 target_embedding=target_embedding,
@@ -94,7 +96,7 @@ def run_counterfactual_generation_task(target_bike_description,
 
 if __name__ == "__main__":
     run_counterfactual_generation_task(
-        "A yellow mountain bike",
-        450,
-        3
+        "mtb bike",
+        2400,
+        4
     )

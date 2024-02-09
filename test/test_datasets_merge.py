@@ -13,6 +13,10 @@ class DatasetMergeTest(unittest.TestCase):
         self.biked = pd.read_csv(resource_path('all_structural_data_aug.csv'), index_col=0).drop(columns=['batch'])
         self.clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
 
+    def test_outliers(self):
+        for column in self.biked.columns:
+            print(self.biked[column].describe())
+
     def test_dataset_len(self):
         self.assertEqual((len(self.biked), len(self.clips)), (14851, 4512))
 
@@ -47,13 +51,15 @@ class DatasetMergeTest(unittest.TestCase):
                     if (np.isclose(
                             self.biked[b_column].loc[indices].values,
                             self.clips[c_column].loc[clip_indices].values,
-                            rtol=2
-                    ).all()) or (np.isclose(
+                            atol=1e-2
+                    ).all()):
+                        print(f"{b_column} has very close values to {c_column}")
+                    elif np.isclose(
                             self.biked[b_column].loc[indices].values * 1000,
                             self.clips[c_column].loc[clip_indices].values,
-                            rtol=2
-                    ).all()):
-                        print(f"{b_column} has exact same values as {c_column}")
+                            atol=1e-2
+                    ).all():
+                        print(f"{b_column} when scaled has very close values to {c_column}")
                 except Exception as e:
                     print(f"Exception occurred because of {b_column} and {c_column}")
                     raise e
