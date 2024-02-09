@@ -12,5 +12,5 @@ class StructuralPredictor:
         __main__.MultilabelPredictor = MultilabelPredictor
         self._predictor = MultilabelPredictor.load(_MODEL_PATH)
 
-    def predict(self, x: pd.DataFrame):
+    def predict(self, x: pd.DataFrame) -> pd.DataFrame:
         return self._predictor.predict(x)
