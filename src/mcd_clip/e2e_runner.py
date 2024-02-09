@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 from traceback import print_exception
 
@@ -20,11 +21,12 @@ IMAGE_CONVERTOR = ParametricToImageConvertor()
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
     try:
-        return generator.sample_with_weights(25,
+        return generator.sample_with_weights(150,
                                              1,
                                              1,
                                              1,
                                              1,
+                                             bonus_objectives_weights=np.array([10]).reshape((1, 1)),
                                              include_dataset=False)
     except ValueError as e:
         print(f"MCD failed to sample. Returning empty dataframe...")
@@ -60,7 +62,7 @@ def _make_batch_dir(batch_number: int, result_dir: str):
 def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_result_dir):
     with open(os.path.join(batch_result_dir, f"bike_{cf_index}.txt"), "w") as text_file:
         text_file.write(rendering_result.bike_xml)
-    with open(os.path.join(batch_result_dir, f"bike_{cf_index}.png"), "wb") as image_file:
+    with open(os.path.join(batch_result_dir, f"bike_{cf_index}.svg"), "wb") as image_file:
         image_file.write(rendering_result.image)
 
 
@@ -68,19 +70,19 @@ def _build_run_id(target_text: str):
     return target_text.lower().replace(' ', "-") + "-" + (str(uuid.uuid4().fields[-1])[:5])
 
 
-def run_counterfactual_generation_task(target_bike_description,
+def run_counterfactual_generation_task(run_description,
                                        total_generations,
-                                       number_of_batches):
+                                       number_of_batches,
+                                       target_embedding):
     assert total_generations > number_of_batches
     assert total_generations % number_of_batches == 0
 
-    run_id = _build_run_id(target_bike_description)
+    run_id = _build_run_id(run_description)
     results_dir = run_result_path(run_id)
     os.makedirs(results_dir, exist_ok=False)
 
     batch_size = total_generations // number_of_batches
 
-    target_embedding = EMBEDDING_CALCULATOR.from_image_path(resource_path('mtb.png'))
     generator = build_generator(pop_size=100,
                                 initialize_from_dataset=True,
                                 target_embedding=target_embedding,
@@ -95,8 +97,9 @@ def run_counterfactual_generation_task(target_bike_description,
 
 
 if __name__ == "__main__":
+    n_generations = 3200
     run_counterfactual_generation_task(
-        "mtb bike",
-        2400,
-        4
-    )
+        run_description=f"{int(time.time())} mtb {n_generations} gens",
+        total_generations=n_generations,
+        number_of_batches=8,
+        target_embedding=EMBEDDING_CALCULATOR.from_image_path(resource_path("mtb.png")))
