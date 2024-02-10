@@ -1,7 +1,7 @@
 import pandas as pd
 
 from mcd_clip.combined_optimization.columns_constants import CLIPS_IGNORED_MATERIAL, FRAMED_TO_CLIPS_IDENTICAL, \
-    FRAMED_TO_CLIPS_UNITS, FRAMED_COLUMNS
+    FRAMED_TO_CLIPS_UNITS, FRAMED_COLUMNS, CLIPS_COLUMNS
 
 
 class CombinedDataset:
@@ -13,23 +13,30 @@ class CombinedDataset:
         framed = framed_style.copy(deep=True)
         clips = clips_style.copy(deep=True)
         assert len(framed) == len(clips), "Must have the same number of rows to combine"
-        CombinedDataset._drop_intersection(clips)
+        cls._drop_intersection(clips)
         result = pd.concat([framed, clips], axis=1)
         assert len(result) == len(framed)
-        CombinedDataset._drop_clips_material(result)
-        CombinedDataset._drop_clips_identical(result)
-        CombinedDataset._drop_clips_millimeter_columns(result)
+        cls._drop_clips_material(result)
+        cls._drop_clips_identical(result)
+        cls._drop_clips_millimeter_columns(result)
+        cls._replace_intersection(framed=framed, result=result)
         return CombinedDataset(result)
 
+    @staticmethod
+    def _replace_intersection(framed: pd.DataFrame, result: pd.DataFrame):
+        result['Stack'] = framed['Stack']
+        result['DT Length'] = framed['DT Length']
+
     def get_as_framed(self) -> pd.DataFrame:
-        return self._data.drop(columns=[c for c in self._data.columns if c not in FRAMED_COLUMNS])
+        dropped = self._data.drop(columns=[c for c in self._data.columns if c not in FRAMED_COLUMNS])
+        return pd.DataFrame(dropped, columns=FRAMED_COLUMNS)
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)
         self._to_clips_material(data)
         self._to_millimeter_columns(data)
         self._to_clips_identical(data)
-        return data
+        return pd.DataFrame(data, columns=CLIPS_COLUMNS)
 
     def _to_clips_material(self, data: pd.DataFrame):
         for material in CLIPS_IGNORED_MATERIAL:
@@ -40,6 +47,7 @@ class CombinedDataset:
             clips_column = self._to_clips_material_column(material_column)
             data[clips_column] = data[material_column]
         data.drop(columns=framed_material_columns, inplace=True)
+        self._handle_aluminum(data)
 
     def _to_clips_material_column(self, material_column: str) -> str:
         material_value = material_column.split("=")[1]
@@ -73,13 +81,18 @@ class CombinedDataset:
 
     def _to_millimeter_columns(self, data: pd.DataFrame):
         data.drop(columns=FRAMED_TO_CLIPS_UNITS.keys(), inplace=True)
-        for framed_key, clips_key in FRAMED_TO_CLIPS_UNITS:
+        for framed_key, clips_key in FRAMED_TO_CLIPS_UNITS.items():
             data[clips_key] = self._data[framed_key] * 1000
 
     def _to_clips_identical(self, data: pd.DataFrame):
         data.drop(columns=FRAMED_TO_CLIPS_IDENTICAL.keys(), inplace=True)
-        for framed_key, clips_key in FRAMED_TO_CLIPS_IDENTICAL:
+        for framed_key, clips_key in FRAMED_TO_CLIPS_IDENTICAL.items():
             data[clips_key] = self._data[framed_key]
+
+    def _handle_aluminum(self, data):
+        american_spelling = 'MATERIAL OHCLASS: ALUMINUM'
+        data['MATERIAL OHCLASS: ALUMINIUM'] = data[american_spelling]
+        data.drop(columns=[american_spelling], inplace=True)
 
 
 class CombinedOptimizer:
