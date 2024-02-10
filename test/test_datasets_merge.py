@@ -8,7 +8,7 @@ import pandas as pd
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.combined_optimization.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
     CLIPS_COLUMNS
-from mcd_clip.combined_optimization.combined_optimizer import CombinedDataset
+from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes
 from mcd_clip.resource_utils import resource_path
 
 
@@ -20,6 +20,12 @@ class DatasetMergeTest(unittest.TestCase):
                                    index=self.framed.index)
         self.clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
         self.clips.index = [str(idx) for idx in self.clips.index]
+
+    def test_map_columns(self):
+        framed = self.framed.loc[self._get_index_intersection()]
+        clips = self.clips.loc[self._get_index_intersection()]
+        combined_dataset = CombinedDataset.build_from_both(framed_style=framed, clips_style=clips)
+        combined_datatypes = map_combined_datatypes(combined_dataset.get_combined())
 
     def test_combined_dataset_framed_unchanged(self):
         framed = self.framed.loc[self._get_index_intersection()]
