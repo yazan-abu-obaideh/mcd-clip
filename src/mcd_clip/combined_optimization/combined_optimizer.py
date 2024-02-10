@@ -1,7 +1,7 @@
 import pandas as pd
 
 from mcd_clip.combined_optimization.columns_constants import CLIPS_IGNORED_MATERIAL, FRAMED_TO_CLIPS_IDENTICAL, \
-    FRAMED_TO_CLIPS_UNITS
+    FRAMED_TO_CLIPS_UNITS, FRAMED_COLUMNS
 
 
 class CombinedDataset:
@@ -18,21 +18,34 @@ class CombinedDataset:
         assert len(result) == len(framed)
         CombinedDataset._drop_clips_material(result)
         CombinedDataset._drop_clips_identical(result)
-        CombinedDataset._drop_clips_meter_columns(result)
+        CombinedDataset._drop_clips_millimeter_columns(result)
         return CombinedDataset(result)
 
     def get_as_framed(self) -> pd.DataFrame:
-        data = self._data.copy(deep=True)
-        return data.drop(
-            columns=[]
-        )
+        return self._data.drop(columns=[c for c in self._data.columns if c not in FRAMED_COLUMNS])
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)
+        self._to_clips_material(data)
+        self._to_millimeter_columns(data)
+        self._to_clips_identical(data)
+        return data
+
+    def _to_clips_material(self, data: pd.DataFrame):
         for material in CLIPS_IGNORED_MATERIAL:
             data[material] = 0
+        framed_material_columns = [c for c in data.columns if 'Material' in c]
+        print(f"Found framed material columns {framed_material_columns}")
+        for material_column in framed_material_columns:
+            clips_column = self._to_clips_material_column(material_column)
+            data[clips_column] = data[material_column]
+        data.drop(columns=framed_material_columns, inplace=True)
 
-        return data
+    def _to_clips_material_column(self, material_column: str) -> str:
+        material_value = material_column.split("=")[1]
+        clips_column = f"MATERIAL OHCLASS: {material_value.upper()}"
+        print(f"Mapping {material_column} to {clips_column}")
+        return clips_column
 
     @staticmethod
     def _drop_clips_material(dataframe: pd.DataFrame):
@@ -54,9 +67,19 @@ class CombinedDataset:
         dataframe.drop(columns=clips_identical, inplace=True)
 
     @staticmethod
-    def _drop_clips_meter_columns(dataframe: pd.DataFrame):
+    def _drop_clips_millimeter_columns(dataframe: pd.DataFrame):
         clips_meter_columns = list(FRAMED_TO_CLIPS_UNITS.values())
         dataframe.drop(columns=clips_meter_columns, inplace=True)
+
+    def _to_millimeter_columns(self, data: pd.DataFrame):
+        data.drop(columns=FRAMED_TO_CLIPS_UNITS.keys(), inplace=True)
+        for framed_key, clips_key in FRAMED_TO_CLIPS_UNITS:
+            data[clips_key] = self._data[framed_key] * 1000
+
+    def _to_clips_identical(self, data: pd.DataFrame):
+        data.drop(columns=FRAMED_TO_CLIPS_IDENTICAL.keys(), inplace=True)
+        for framed_key, clips_key in FRAMED_TO_CLIPS_IDENTICAL:
+            data[clips_key] = self._data[framed_key]
 
 
 class CombinedOptimizer:
