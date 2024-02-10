@@ -6,6 +6,7 @@ import numpy.testing as np_test
 import pandas as pd
 
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
+from mcd_clip.combined_optimization.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
 from mcd_clip.resource_utils import resource_path
 
 
@@ -16,6 +17,12 @@ class DatasetMergeTest(unittest.TestCase):
                                    columns=self.framed.columns,
                                    index=self.framed.index)
         self.clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
+
+    def test_framed_columns(self):
+        print(self.framed.columns)
+
+    def test_clips_columns(self):
+        print(self.clips.columns)
 
     def test_outliers(self):
         for column in self.framed.columns:
@@ -80,8 +87,17 @@ class DatasetMergeTest(unittest.TestCase):
         print(f"{identical_framed=}")
         print(f"{identical_clips=}")
 
-        self.assertEqual(len(scaled_framed), len(scaled_clips))
-        self.assertEqual(len(identical_framed), len(identical_clips))
+        self.assertEqual(len(scaled_framed), len(FRAMED_TO_CLIPS_UNITS))
+        self.assertEqual(len(identical_framed), len(FRAMED_TO_CLIPS_IDENTICAL))
+
+    def test_drop_material(self):
+        intersection = self._get_index_intersection()
+        clips = self.clips.loc[[int(idx) for idx in intersection]]
+        for material in ['MATERIAL OHCLASS: BAMBOO', 'MATERIAL OHCLASS: CARBON', 'MATERIAL OHCLASS: OTHER']:
+            print(np.sum(clips[material]))
+
+    def test_get_material(self):
+        print([c for c in self.clips.columns if 'material' in str(c).lower()])
 
     def _get_index_intersection(self) -> List[str]:
         framed_idx_set = set(self.framed.index)
