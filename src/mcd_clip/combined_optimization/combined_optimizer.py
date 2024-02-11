@@ -5,6 +5,7 @@ from typing import List
 import numpy as np
 import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
+from decode_mcd.design_targets import McdTarget
 
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 from mcd_clip.bike_embedding.embedding_similarity_optimizer import CONSTANT_COLUMNS, predict_cosine_distance
@@ -16,27 +17,58 @@ from mcd_clip.resource_utils import resource_path, run_result_path
 STRUCTURAL_PREDICTOR = StructuralPredictor()
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 
-framed_x, y, x_scaler, y_scaler = load_augmented_framed_dataset()
-framed_x = pd.DataFrame(x_scaler.inverse_transform(framed_x),
-                        columns=framed_x.columns,
-                        index=framed_x.index)
-clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
-clips.index = [str(idx) for idx in clips.index]
 
-intersection = set(framed_x.index).intersection(set(clips.index))
+# framed_x, y, x_scaler, y_scaler = load_augmented_framed_dataset()
+# framed_x = pd.DataFrame(x_scaler.inverse_transform(framed_x),
+#                         columns=framed_x.columns,
+#                         index=framed_x.index)
+# clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
+# clips.index = [str(idx) for idx in clips.index]
+#
+# intersection = set(framed_x.index).intersection(set(clips.index))
+#
+# framed_x = framed_x.loc[intersection]
+# clips = clips.loc[intersection]
 
-framed_x = framed_x.loc[intersection]
-clips = clips.loc[intersection]
 
-print(len(framed_x))
-print(len(clips))
+class EmbeddingTarget:
+    def get_embedding(self):
+        pass
+
+
+class TextEmbeddingTarget(EmbeddingTarget):
+    def __init__(self, text_target: str):
+        self._text_target = text_target
+        self._embedding = EMBEDDING_CALCULATOR.from_text(self._text_target)
+
+    def __str__(self):
+        return f"TextEmbeddingTarget: [{self._text_target}]"
+
+    def get_embedding(self):
+        return self._embedding
+
+
+class ImageEmbeddingTarget(EmbeddingTarget):
+    def __init__(self, image_path: str):
+        self._image_path = image_path
+        self._embedding = EMBEDDING_CALCULATOR.from_image_path(image_path)
+
+    def __str__(self):
+        return f"ImageEmbeddingTarget: [{os.path.split(self._image_path)[-1]}]"
+
+    def get_embedding(self):
+        super().get_embedding()
 
 
 class CombinedOptimizer:
-    def __init__(self, target_embeddings: List[np.ndarray]):
+    def __init__(self,
+                 structural_targets: List[McdTarget],
+                 target_embeddings: List[EmbeddingTarget]):
         self._target_embeddings = target_embeddings
-        self._x_scaler = x_scaler
-        self._y_scaler = y_scaler
+        _, y, self._x_scaler, self._y_scaler = load_augmented_framed_dataset()
+        self.structural_targets = structural_targets
+        as_text = [t.label for t in self.structural_targets]
+        self._structural_predictor = StructuralPredictor(exclude_predictors=[c for c in y.columns if c not in as_text])
 
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
         structural_predictions = STRUCTURAL_PREDICTOR.predict_unscaled(designs.get_as_framed(),
@@ -58,6 +90,9 @@ class CombinedOptimizer:
         self._log_nans(result.astype('float64'))
         return result
 
+    def _get_x_scaler(self):
+        return load_augmented_framed_dataset()[2]
+
     def _log_nans(self, result):
         nan_columns = [c for c in result.columns if result[c].isna().any()]
         if nan_columns:
@@ -67,8 +102,8 @@ class CombinedOptimizer:
 if __name__ == '__main__':
     optimizer = CombinedOptimizer(
         target_embeddings=[
-            EMBEDDING_CALCULATOR.from_text('A futuristic black cyberpunk-style road racing bicycle'),
-            EMBEDDING_CALCULATOR.from_image_path(resource_path('mtb.png')),
+            TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
+            ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
         ]
     )
     clips.drop(columns=CONSTANT_COLUMNS, inplace=True)
