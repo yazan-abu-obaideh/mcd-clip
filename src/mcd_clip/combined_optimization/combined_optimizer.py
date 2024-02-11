@@ -35,9 +35,13 @@ print(len(clips))
 class CombinedOptimizer:
     def __init__(self, target_embeddings: List[np.ndarray]):
         self._target_embeddings = target_embeddings
+        self._x_scaler = x_scaler
+        self._y_scaler = y_scaler
 
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
-        structural_predictions = STRUCTURAL_PREDICTOR.predict(designs.get_as_framed())
+        structural_predictions = STRUCTURAL_PREDICTOR.predict_unscaled(designs.get_as_framed(),
+                                                                       self._x_scaler,
+                                                                       self._y_scaler)
         designs_clips = designs.get_as_clips()
         embedding_predictions = pd.DataFrame(
             columns=[f'embedding_distance_{i}' for i in range(1, len(self._target_embeddings) + 1)],
@@ -48,8 +52,16 @@ class CombinedOptimizer:
                                                                                                  idx])
 
         concat = pd.concat([structural_predictions, embedding_predictions], axis=1)
-        return pd.DataFrame(concat, columns=['Model Mass', 'Sim 1 Safety Factor (Inverted)'] + list(
+
+        result = pd.DataFrame(concat, columns=['Model Mass', 'Sim 1 Safety Factor (Inverted)'] + list(
             embedding_predictions.columns))
+        self._log_nans(result.astype('float64'))
+        return result
+
+    def _log_nans(self, result):
+        nan_columns = [c for c in result.columns if result[c].isna().any()]
+        if nan_columns:
+            print(f"WARNING: found nan columns {nan_columns}")
 
 
 if __name__ == '__main__':
@@ -104,8 +116,7 @@ if __name__ == '__main__':
 
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
-        generator.generate(n_generations=cumulative_gens,
-                           seed=42)
+        generator.generate(n_generations=cumulative_gens)
         sampled = generator.sample_with_weights(num_samples=100, avg_gower_weight=1, gower_weight=1, cfc_weight=1,
                                                 diversity_weight=1)
         sampled: pd.DataFrame
