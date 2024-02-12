@@ -62,6 +62,32 @@ class CombinedOptimizer:
         self._design_targets = design_targets
         self._structural_predictor = StructuralPredictor()
 
+    def build_generator(self) -> CounterfactualsGenerator:
+        original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
+        starting_dataset = CombinedDataset.build_from_both(framed_style=original_dataset.get_as_framed(),
+                                                           clips_style=original_dataset.get_as_clips().drop(
+                                                               columns=CONSTANT_COLUMNS))
+        data_package = DataPackage(
+            features_dataset=starting_dataset.get_combined(),
+            predictions_dataset=self.predict(starting_dataset),
+            query_x=starting_dataset.get_combined().iloc[0:1],
+            design_targets=self._design_targets,
+            datatypes=map_combined_datatypes(starting_dataset.get_combined()),
+            bonus_objectives=list(self._design_targets.get_all_constrained_labels()) + self.distance_columns()
+        )
+        problem = MultiObjectiveProblem(
+            data_package=data_package,
+            prediction_function=lambda d: self.predict(CombinedDataset(
+                pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
+            constraint_functions=[]
+        )
+        generator = CounterfactualsGenerator(
+            problem=problem,
+            pop_size=100,
+            initialize_from_dataset=True,
+        )
+        return generator
+
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
         predictions = self._structural_predictor.predict_unscaled(designs.get_as_framed(),
                                                                   self._x_scaler,
@@ -89,37 +115,6 @@ class CombinedOptimizer:
             print(f"WARNING: found nan columns {nan_columns}")
 
 
-def build_generator(design_targets: DesignTargets, target_embeddings: List[EmbeddingTarget]) -> CounterfactualsGenerator:
-    optimizer = CombinedOptimizer(
-        design_targets=design_targets,
-        target_embeddings=target_embeddings
-    )
-    original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
-    starting_dataset = CombinedDataset.build_from_both(framed_style=original_dataset.get_as_framed(),
-                                                       clips_style=original_dataset.get_as_clips().drop(
-                                                           columns=CONSTANT_COLUMNS))
-    data_package = DataPackage(
-        features_dataset=starting_dataset.get_combined(),
-        predictions_dataset=optimizer.predict(starting_dataset),
-        query_x=starting_dataset.get_combined().iloc[0:1],
-        design_targets=design_targets,
-        datatypes=map_combined_datatypes(starting_dataset.get_combined()),
-        bonus_objectives=list(design_targets.get_all_constrained_labels()) + optimizer.distance_columns()
-    )
-    problem = MultiObjectiveProblem(
-        data_package=data_package,
-        prediction_function=lambda d: optimizer.predict(CombinedDataset(
-            pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
-        constraint_functions=[]
-    )
-    generator = CounterfactualsGenerator(
-        problem=problem,
-        pop_size=100,
-        initialize_from_dataset=True,
-    )
-    return generator
-
-
 def run_generation_task() -> CounterfactualsGenerator:
     design_targets = DesignTargets(continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
                                                        ContinuousTarget('Sim 1 Safety Factor (Inverted)',
@@ -129,8 +124,12 @@ def run_generation_task() -> CounterfactualsGenerator:
         ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
     ]
 
-    generator = build_generator(design_targets=design_targets,
-                                target_embeddings=target_embeddings)
+    optimizer = CombinedOptimizer(
+        design_targets=design_targets,
+        target_embeddings=target_embeddings
+    )
+
+    generator = optimizer.build_generator()
 
     number_of_batches = 10
     batch_size = 100
