@@ -67,7 +67,7 @@ class CombinedOptimizer:
                                                                   self._x_scaler,
                                                                   self._y_scaler)
         designs_clips = designs.get_as_clips()
-        embedding_predictions = pd.DataFrame(columns=self._distance_columns(), index=designs_clips.index)
+        embedding_predictions = pd.DataFrame(columns=self.distance_columns(), index=designs_clips.index)
         for idx in range(len(self._target_embeddings)):
             target = self._target_embeddings[idx].get_embedding()
             embedding_predictions[distance_column_name(idx)] = predict_cosine_distance(designs_clips, target)
@@ -80,7 +80,7 @@ class CombinedOptimizer:
         self._log_nans(predictions.astype('float64'))
         return result
 
-    def _distance_columns(self) -> List[str]:
+    def distance_columns(self) -> List[str]:
         return [distance_column_name(i) for i in range(len(self._target_embeddings))]
 
     def _log_nans(self, result: pd.DataFrame):
@@ -89,15 +89,7 @@ class CombinedOptimizer:
             print(f"WARNING: found nan columns {nan_columns}")
 
 
-def run_generation_task() -> CounterfactualsGenerator:
-    design_targets = DesignTargets(continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
-                                                       ContinuousTarget('Sim 1 Safety Factor (Inverted)',
-                                                                        lower_bound=0, upper_bound=1), ])
-
-    target_embeddings = [
-        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
-        ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
-    ]
+def build_generator(design_targets: DesignTargets, target_embeddings: List[EmbeddingTarget]) -> CounterfactualsGenerator:
     optimizer = CombinedOptimizer(
         design_targets=design_targets,
         target_embeddings=target_embeddings
@@ -112,21 +104,33 @@ def run_generation_task() -> CounterfactualsGenerator:
         query_x=starting_dataset.get_combined().iloc[0:1],
         design_targets=design_targets,
         datatypes=map_combined_datatypes(starting_dataset.get_combined()),
-        bonus_objectives=[distance_column_name(i) for i in range(len(target_embeddings))]
+        bonus_objectives=list(design_targets.get_all_constrained_labels()) + optimizer.distance_columns()
     )
-
     problem = MultiObjectiveProblem(
         data_package=data_package,
         prediction_function=lambda d: optimizer.predict(CombinedDataset(
             pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
         constraint_functions=[]
     )
-
     generator = CounterfactualsGenerator(
         problem=problem,
         pop_size=100,
         initialize_from_dataset=True,
     )
+    return generator
+
+
+def run_generation_task() -> CounterfactualsGenerator:
+    design_targets = DesignTargets(continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
+                                                       ContinuousTarget('Sim 1 Safety Factor (Inverted)',
+                                                                        lower_bound=0, upper_bound=1), ])
+    target_embeddings = [
+        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
+        ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
+    ]
+
+    generator = build_generator(design_targets=design_targets,
+                                target_embeddings=target_embeddings)
 
     number_of_batches = 10
     batch_size = 100
