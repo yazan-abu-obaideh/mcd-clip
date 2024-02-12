@@ -69,7 +69,10 @@ def build_generator(target_embedding: np.ndarray,
     problem = MultiObjectiveProblem(data_package=data_package,
                                     prediction_function=lambda design:
                                     predict_cosine_distance(design, target_embedding),
-                                    constraint_functions=[validate_clips_seat_height])
+                                    constraint_functions=[
+                                        validate_clips_seat_height,
+                                        # validate_clips_connected_seat
+                                    ])
 
     return CounterfactualsGenerator(problem=problem,
                                     pop_size=pop_size,

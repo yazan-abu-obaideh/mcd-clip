@@ -13,6 +13,7 @@ from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.biked.structural_predictor import StructuralPredictor
 from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
+from mcd_clip.combined_optimization.validations import validate_combined_seat_height
 from mcd_clip.resource_utils import resource_path, run_result_path
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
@@ -79,7 +80,9 @@ class CombinedOptimizer:
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
                 pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
-            constraint_functions=[]
+            constraint_functions=[
+                validate_combined_seat_height
+            ]
         )
         generator = CounterfactualsGenerator(
             problem=problem,
@@ -132,7 +135,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     generator = optimizer.build_generator()
 
     number_of_batches = 10
-    batch_size = 100
+    batch_size = 50
 
     run_id = 'combined-run-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
