@@ -97,9 +97,9 @@ def run_counterfactual_generation_task(run_description,
 
 
 if __name__ == "__main__":
-    n_generations = 3200
+    n_generations = 400
     run_counterfactual_generation_task(
-        run_description=f"{int(time.time())} mtb {n_generations} gens",
+        run_description=f"blue mountain bike",
         total_generations=n_generations,
         number_of_batches=8,
-        target_embedding=EMBEDDING_CALCULATOR.from_image_path(resource_path("mtb.png")))
+        target_embedding=EMBEDDING_CALCULATOR.from_text('a blue mountain bike'))
