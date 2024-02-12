@@ -23,13 +23,10 @@ class EmbeddingSimilarityOptimizerTest(unittest.TestCase):
 
     def _t_to_string(self, t: Variable):
         if type(t) is Real:
-            print(f"R {t.bounds}")
             return 'R'
         if type(t) is Integer:
-            print(f"I {t.bounds}")
             return 'I'
         if type(t) is Choice:
-            print(f"Choice {t.options}")
             return 'C'
 
     def test_no_errors_thrown_when_run(self):

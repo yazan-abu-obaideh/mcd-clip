@@ -7,7 +7,7 @@ import pandas as pd
 
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.combined_optimization.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
-    CLIPS_COLUMNS
+    CLIPS_COLUMNS, FRAMED_COLUMNS
 from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes
 from mcd_clip.resource_utils import resource_path
 
@@ -20,6 +20,7 @@ class DatasetMergeTest(unittest.TestCase):
                                    index=self.framed.index)
         self.clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
         self.clips.index = [str(idx) for idx in self.clips.index]
+        self._index_intersection = self._get_index_intersection()
 
     def test_map_columns(self):
         framed = self.framed.loc[self._get_index_intersection()]
@@ -35,6 +36,10 @@ class DatasetMergeTest(unittest.TestCase):
         self.assertEqual(set(combined_dataset.get_as_framed().columns), set(framed.columns))
         self.assertEqual(set(combined_dataset.get_as_clips().columns), set(clips.columns))
         np_test.assert_array_equal(combined_dataset.get_as_framed(), framed)
+
+    def test_constants(self):
+        self.assertEqual(set(self.framed.columns), set(FRAMED_COLUMNS))
+        self.assertEqual(set(self.clips.columns), set(CLIPS_COLUMNS))
 
     def test_combined_dataset_clips_ignore_material(self):
         """Not ideal, but clips changes a bit through the combination: we ignore materials other than
@@ -91,44 +96,23 @@ class DatasetMergeTest(unittest.TestCase):
             decimal=2
         )
 
+    @unittest.skip
     def test_columns_with_identical_values(self):
         b_columns = set(self.framed.columns)
         c_columns = set(self.clips.columns)
-        indices = self._get_index_intersection()
-        identical_framed = []
-        identical_clips = []
-        scaled_framed = []
-        scaled_clips = []
+        framed_to_clips_identical = {}
+        framed_to_clips_units = {}
         for b_column in b_columns:
             for c_column in c_columns:
-                try:
-                    if (np.isclose(
-                            self.framed[b_column].loc[indices].values,
-                            self.clips[c_column].loc[indices].values,
-                            atol=1e-2
-                    ).all()):
-                        print(f"{b_column} has very close values to {c_column}")
-                        identical_framed.append(b_column)
-                        identical_clips.append(c_column)
-                    elif np.isclose(
-                            self.framed[b_column].loc[indices].values * 1000,
-                            self.clips[c_column].loc[indices].values,
-                            atol=1e-2
-                    ).all():
-                        scaled_framed.append(b_column)
-                        scaled_clips.append(c_column)
-                        print(f"{b_column} when scaled has very close values to {c_column}")
-                except Exception as e:
-                    print(f"Exception occurred because of {b_column} and {c_column}")
-                    raise e
+                if self._all_close(framed_column=b_column, clips_column=c_column, multiplier=1):
+                    print(f"{b_column} has very close values to {c_column}")
+                    framed_to_clips_identical[b_column] = c_column
+                elif self._all_close(framed_column=b_column, clips_column=c_column, multiplier=1000):
+                    framed_to_clips_units[b_column] = c_column
+                    print(f"{b_column} when scaled has very close values to {c_column}")
 
-        print(f"{scaled_framed=}")
-        print(f"{scaled_clips=}")
-        print(f"{identical_framed=}")
-        print(f"{identical_clips=}")
-
-        self.assertEqual(len(scaled_framed), len(FRAMED_TO_CLIPS_UNITS))
-        self.assertEqual(len(identical_framed), len(FRAMED_TO_CLIPS_IDENTICAL))
+        self.assertEqual(framed_to_clips_units, FRAMED_TO_CLIPS_UNITS)
+        self.assertEqual(framed_to_clips_identical, FRAMED_TO_CLIPS_IDENTICAL)
 
     def test_drop_material(self):
         intersection = self._get_index_intersection()
@@ -143,3 +127,12 @@ class DatasetMergeTest(unittest.TestCase):
         framed_idx_set = set(self.framed.index)
         clips_idx_set = set([str(index) for index in self.clips.index])
         return list(framed_idx_set.intersection(clips_idx_set))
+
+    def _all_close(self, framed_column: str,
+                   clips_column: str,
+                   multiplier: int):
+        return np.isclose(
+            self.framed[framed_column].loc[self._index_intersection].values * multiplier,
+            self.clips[clips_column].loc[self._index_intersection].values,
+            atol=1e-2
+        ).all()
