@@ -1,0 +1,3 @@
+from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+
+EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
