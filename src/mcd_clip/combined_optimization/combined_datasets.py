@@ -7,6 +7,7 @@ from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
 from mcd_clip.combined_optimization.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
     FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
+from mcd_clip.resource_utils import resource_path
 
 
 def unscaled_framed_dataset():
@@ -134,3 +135,21 @@ class CombinedDataset:
         american_spelling = 'MATERIAL OHCLASS: ALUMINUM'
         data['MATERIAL OHCLASS: ALUMINIUM'] = data[american_spelling]
         data.drop(columns=[american_spelling], inplace=True)
+
+
+class OriginalCombinedDataset:
+    def __init__(self):
+        x_framed, y_framed, x_scaler, y_scaler = load_augmented_framed_dataset()
+        x_scaler.inverse_transform(x_framed)
+        x_framed = pd.DataFrame(x_scaler.inverse_transform(x_framed), columns=x_framed.columns, index=x_framed.index)
+        clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
+        clips.index = [str(idx) for idx in clips.index]
+
+        intersection = list(set(x_framed.index).intersection(set(clips.index)))
+
+        x_framed = x_framed.loc[intersection]
+        clips = clips.loc[intersection]
+        self._combined = CombinedDataset.build_from_both(framed_style=x_framed, clips_style=clips)
+
+    def get_combined_dataset(self) -> CombinedDataset:
+        return self._combined
