@@ -1,7 +1,9 @@
 import os
 import uuid
+from abc import abstractmethod, ABCMeta
 from typing import List
 
+import numpy as np
 import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
 
@@ -21,8 +23,9 @@ def distance_column_name(column_index: int):
     return f"embedding_distance_{column_index + 1}"
 
 
-class EmbeddingTarget:
-    def get_embedding(self):
+class EmbeddingTarget(metaclass=ABCMeta):
+    @abstractmethod
+    def get_embedding(self) -> np.ndarray:
         pass
 
 
@@ -34,7 +37,7 @@ class TextEmbeddingTarget(EmbeddingTarget):
     def __str__(self):
         return f"TextEmbeddingTarget: [{self._text_target}]"
 
-    def get_embedding(self):
+    def get_embedding(self) -> np.ndarray:
         return self._embedding
 
 
@@ -46,7 +49,7 @@ class ImageEmbeddingTarget(EmbeddingTarget):
     def __str__(self):
         return f"ImageEmbeddingTarget: [{os.path.split(self._image_path)[-1]}]"
 
-    def get_embedding(self):
+    def get_embedding(self) -> np.ndarray:
         return self._embedding
 
 
