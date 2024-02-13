@@ -6,10 +6,32 @@ Created on Tue Mar 30 20:33:03 2021
 """
 
 from pathlib import Path
-import pandas as pd
+
 import numpy as np
 
 from mcd_clip.bke_validations.validation_constants import ALL_POSITIVE
+
+DATAFRAME_VALIDATION_FUNCTIONS = [
+    lambda df: df["Saddle height"] < df["Seat tube length"] + 40,
+    lambda df: df["Saddle height"] > (df["Seat tube length"] + df["Seatpost LENGTH"] + 30),
+    lambda df: df["Wheel diameter front"] < df["BSD front"],
+    lambda df: df["Wheel diameter rear"] < df["BSD rear"],
+    lambda df: df["BSD rear"] - df["Rim depth rear"] * 2 > df["ERD rear"],
+    lambda df: df["BSD front"] - df["Rim depth front"] * 2 > df["ERD front"],
+    lambda df: df["Wheel diameter rear"] > df["Wheel cut"],
+    lambda df: df["Wheel diameter rear"] < df["ERD rear"],
+    lambda df: df["BSD rear"] < df["ERD rear"],
+    lambda df: df["BSD front"] < df["ERD front"],
+    lambda df: df["Wheel diameter front"] < df["ERD front"],
+    lambda df: df["FDERD"] <= 0,
+    lambda df: df["RDERD"] <= 0,
+    lambda df: df["FDBSD"] <= 0,
+    lambda df: df["Head tube lower extension2"] >= df["Head tube length textfield"],
+    lambda df: ((df["Head tube upper extension2"] + df["Head tube lower extension2"])
+                >= df['Head tube length textfield']),
+    lambda df: df["RDBSD"] <= 0,
+    lambda df: df["CS textfield"] <= 0,
+]
 
 
 def checkdf(df, genname, printcodes=0, intermediates=0):

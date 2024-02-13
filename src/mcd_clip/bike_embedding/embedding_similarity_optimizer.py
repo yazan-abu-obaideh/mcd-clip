@@ -4,8 +4,8 @@ from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, Counte
 
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
+from mcd_clip.bke_validations.df_check import DATAFRAME_VALIDATION_FUNCTIONS
 from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
-from mcd_clip.combined_optimization.validations import validate_clips_seat_height
 from mcd_clip.resource_utils import resource_path
 
 PREDICTOR = EmbeddingPredictor()
@@ -69,10 +69,7 @@ def build_generator(target_embedding: np.ndarray,
     problem = MultiObjectiveProblem(data_package=data_package,
                                     prediction_function=lambda design:
                                     predict_cosine_distance(design, target_embedding),
-                                    constraint_functions=[
-                                        validate_clips_seat_height,
-                                        # validate_clips_connected_seat
-                                    ])
+                                    constraint_functions=DATAFRAME_VALIDATION_FUNCTIONS)
 
     return CounterfactualsGenerator(problem=problem,
                                     pop_size=pop_size,
