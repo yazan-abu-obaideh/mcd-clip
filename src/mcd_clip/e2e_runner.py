@@ -97,9 +97,9 @@ def run_counterfactual_generation_task(run_description,
 
 
 if __name__ == "__main__":
-    n_generations = 400
+    n_generations = 120
     run_counterfactual_generation_task(
-        run_description=f"validations black cyberpunk bike",
+        run_description=f"120 18 validations black cyberpunk bike",
         total_generations=n_generations,
-        number_of_batches=4,
+        number_of_batches=2,
         target_embedding=EMBEDDING_CALCULATOR.from_text('a black cyberpunk bike'))
