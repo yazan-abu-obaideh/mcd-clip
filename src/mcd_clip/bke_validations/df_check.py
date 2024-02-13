@@ -6,11 +6,8 @@ Created on Tue Mar 30 20:33:03 2021
 """
 
 from pathlib import Path
-from traceback import print_exception
-from typing import Callable
 
 import numpy as np
-import pandas as pd
 
 from mcd_clip.bke_validations.validation_constants import ALL_POSITIVE
 
@@ -34,26 +31,6 @@ DATAFRAME_VALIDATION_FUNCTIONS = [
                 >= df['Head tube length textfield']),
     lambda df: df["RDBSD"] <= 0,
     lambda df: df["CS textfield"] <= 0,
-]
-
-
-def wrap_with_try_catch(validation_function: Callable):
-    def wrapped_function(designs: pd.DataFrame):
-        try:
-            validation_result = validation_function(designs).astype("int32")
-            print(f"Validation successful percent invalid [{np.sum(validation_result) / len(designs)}%]")
-            return validation_result
-        except KeyError as e:
-            print("Validation function failed...")
-            print_exception(e)
-            return pd.DataFrame(np.zeros(shape=(len(designs), 1)))
-
-    return wrapped_function
-
-
-DATAFRAME_VALIDATION_FUNCTIONS = [
-    wrap_with_try_catch(validation_function=validation_function) for validation_function
-    in DATAFRAME_VALIDATION_FUNCTIONS
 ]
 
 

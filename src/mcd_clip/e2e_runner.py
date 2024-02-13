@@ -1,5 +1,4 @@
 import os
-import time
 import uuid
 from traceback import print_exception
 
@@ -11,7 +10,7 @@ from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalcu
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_similarity_optimizer import build_generator, to_full_dataframe, PREDICTOR
 from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor, RenderingResult
-from mcd_clip.resource_utils import run_result_path, resource_path
+from mcd_clip.resource_utils import run_result_path
 
 SIMILARITY = 'cosine_similarity'
 
@@ -25,7 +24,7 @@ def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
                                              1,
                                              1,
                                              1,
-                                             1,
+                                             0,
                                              bonus_objectives_weights=np.array([10]).reshape((1, 1)),
                                              include_dataset=False)
     except ValueError as e:
@@ -97,9 +96,9 @@ def run_counterfactual_generation_task(run_description,
 
 
 if __name__ == "__main__":
-    n_generations = 120
+    n_generations = 400
     run_counterfactual_generation_task(
-        run_description=f"120 18 validations black cyberpunk bike",
+        run_description=f"no-diverse 400 18 validations black cyberpunk bike",
         total_generations=n_generations,
-        number_of_batches=2,
+        number_of_batches=4,
         target_embedding=EMBEDDING_CALCULATOR.from_text('a black cyberpunk bike'))
