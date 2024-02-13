@@ -134,10 +134,10 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 10
-    batch_size = 50
+    number_of_batches = 4
+    batch_size = 300
 
-    run_id = 'combined-run-' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'ultimate-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
@@ -149,7 +149,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
         generator.generate(n_generations=cumulative_gens)
-        sampled = generator.sample_with_weights(num_samples=100, avg_gower_weight=1, gower_weight=1,
+        sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
                                                 cfc_weight=1, diversity_weight=1)
         sampled.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
         generator.save(os.path.join(run_dir, f'generator_{cumulative_gens}'))
