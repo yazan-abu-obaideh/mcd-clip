@@ -11,9 +11,9 @@ from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalcu
 from mcd_clip.bike_embedding.embedding_similarity_optimizer import predict_cosine_distance, CONSTANT_COLUMNS
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.biked.structural_predictor import StructuralPredictor
+from mcd_clip.bke_validations.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
-from mcd_clip.combined_optimization.validations import validate_combined_seat_height
 from mcd_clip.resource_utils import resource_path, run_result_path
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
@@ -80,9 +80,7 @@ class CombinedOptimizer:
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
                 pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
-            constraint_functions=[
-                validate_combined_seat_height
-            ]
+            constraint_functions=COMBINED_VALIDATION_FUNCTIONS
         )
         generator = CounterfactualsGenerator(
             problem=problem,
@@ -134,10 +132,10 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 4
-    batch_size = 300
+    number_of_batches = 3
+    batch_size = 150
 
-    run_id = 'ultimate-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'validations-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
