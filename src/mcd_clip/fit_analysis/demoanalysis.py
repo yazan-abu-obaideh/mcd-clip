@@ -1,4 +1,3 @@
-import os
 import pickle
 
 import numpy as np
@@ -6,6 +5,7 @@ import pandas as pd
 
 from mcd_clip.fit_analysis.interfacepoints import interface_points
 from mcd_clip.fit_analysis.vectorizedangles import all_angles, validity_mask
+from mcd_clip.resource_utils import resource_path
 
 # from sklearn.neural_network import MLPRegressor
 
@@ -22,7 +22,7 @@ from mcd_clip.fit_analysis.vectorizedangles import all_angles, validity_mask
 
 
 # GLOBAL MODEL
-with open(os.path.join(os.path.dirname(__file__), "../resources/new_formatted_model.pkl"), "rb") as file:
+with open(resource_path('aero_model.pkl'), "rb") as file:
     global_model = pickle.load(file)[2]
 
 
