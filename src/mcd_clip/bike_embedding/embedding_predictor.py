@@ -19,6 +19,7 @@ def _get_pickled_scaler() -> StandardScaler:
 def _load_scaled():
     model = _ResidualNetwork(96, 512, 256, 2, 3)
     model.load_state_dict(torch.load(_SCALED_FUNCTION_PATH, map_location=_DEVICE))
+    model.eval()
     return model
 
 

@@ -46,7 +46,8 @@ def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: 
 
 def _get_closest(counterfactuals, target_embedding: np.ndarray):
     sample_size = min(len(counterfactuals), 5)
-    counterfactuals[SIMILARITY] = get_cosine_similarity(PREDICTOR.predict(counterfactuals), target_embedding)
+    counterfactuals[SIMILARITY] = get_cosine_similarity(PREDICTOR.predict_with_new_model(counterfactuals),
+                                                        target_embedding)
     closest_cfs = counterfactuals.sort_values(by=SIMILARITY, ascending=False)[:sample_size]
     print(f"Closest counterfactuals found: {closest_cfs[SIMILARITY]}")
     return closest_cfs
@@ -98,7 +99,7 @@ def run_counterfactual_generation_task(run_description,
 if __name__ == "__main__":
     n_generations = 400
     run_counterfactual_generation_task(
-        run_description=f"no-diverse 400 18 validations black cyberpunk bike",
+        run_description=f"repair new model yellow mountain bike with thick tires",
         total_generations=n_generations,
         number_of_batches=4,
-        target_embedding=EMBEDDING_CALCULATOR.from_text('a black cyberpunk bike'))
+        target_embedding=EMBEDDING_CALCULATOR.from_text('A yellow mountain bike with thick tires'))

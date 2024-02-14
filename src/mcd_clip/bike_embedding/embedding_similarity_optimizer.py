@@ -26,13 +26,13 @@ TRIMMED_FEATURES = FEATURES.drop(columns=CONSTANT_COLUMNS)
 
 
 def get_labels(target_embedding: np.ndarray):
-    predictions = PREDICTOR.predict(FEATURES)
+    predictions = PREDICTOR.predict_with_new_model(FEATURES)
     return 1 - get_cosine_similarity(predictions, target_embedding)
 
 
 def predict_cosine_distance(designs, target_embedding):
     designs_copy = to_full_dataframe(designs)
-    return 1 - get_cosine_similarity(PREDICTOR.predict(designs_copy), target_embedding)
+    return 1 - get_cosine_similarity(PREDICTOR.predict_with_new_model(designs_copy), target_embedding)
 
 
 def to_full_dataframe(designs):

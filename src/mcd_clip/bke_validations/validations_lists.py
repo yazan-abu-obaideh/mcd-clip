@@ -30,7 +30,7 @@ def _wrap_function(validation_function: Callable):
     def wrapped_function(designs: pd.DataFrame):
         try:
             validation_result = validation_function(designs).astype("int32")
-            print(f"Validation successful percent invalid [{np.sum(validation_result) / len(designs)}%]")
+            print(f"Validation result: percent invalid [{np.sum(validation_result) / len(designs)}%]")
             return validation_result
         except KeyError as e:
             print(f"Validation function failed {e}...")

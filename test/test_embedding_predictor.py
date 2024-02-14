@@ -28,6 +28,9 @@ class EmbeddingPredictorTest(unittest.TestCase):
                                                target))
         self.assertGreater(score, 0.93)
 
+    def test_scaled_predict_one(self):
+        self.embedding_predictor.predict_with_new_model(self.parameters.iloc[0:1])
+
     def test_r2(self):
         calc = ClipEmbeddingCalculatorImpl()
         target = calc.from_text("A green bicycle with thick wheels")
