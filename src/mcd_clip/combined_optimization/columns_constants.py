@@ -11,6 +11,13 @@ FRAMED_TO_CLIPS_IDENTICAL = {'HT Angle': 'Head angle', 'SSB_Include': 'SEATSTAYb
 
 CLIPS_IGNORED_MATERIAL = ['MATERIAL OHCLASS: BAMBOO', 'MATERIAL OHCLASS: CARBON', 'MATERIAL OHCLASS: OTHER']
 
+ERGONOMICS_COLUMNS = [
+    "DT Length", "HT Length", "HT Angle", "HT LX", "Stack",
+    "ST Length", "ST Angle",
+    "Seatpost LENGTH",
+    "Saddle height", "Stem length", "Stem angle", "Headset spacers", "Crank length", "Handlebar style"
+]
+
 FRAMED_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium',
                   'SSB_Include', 'CSB_Include', 'CS Length', 'BB Drop', 'Stack', 'SS E',
                   'ST Angle', 'BB OD', 'TT OD', 'HT OD', 'DT OD', 'CS OD', 'SS OD',

@@ -6,7 +6,7 @@ from pymoo.core.variable import Variable, Choice, Real
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
 from mcd_clip.combined_optimization.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
-    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
+    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, ERGONOMICS_COLUMNS
 from mcd_clip.resource_utils import resource_path
 
 
@@ -67,6 +67,11 @@ class CombinedDataset:
     def get_as_framed(self) -> pd.DataFrame:
         dropped = self._data.drop(columns=[c for c in self._data.columns if c not in FRAMED_COLUMNS])
         return pd.DataFrame(dropped, columns=FRAMED_COLUMNS)
+
+    def get_for_ergonomics(self) -> pd.DataFrame:
+        dropped = self._data.drop(columns=ERGONOMICS_COLUMNS)
+        self._data['Stem length'] = 450
+        return pd.DataFrame(self._data)
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)

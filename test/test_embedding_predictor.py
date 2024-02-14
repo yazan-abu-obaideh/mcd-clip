@@ -3,7 +3,10 @@ import unittest
 
 import pandas as pd
 import numpy.testing as np_test
+from sklearn.metrics import r2_score
 
+from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
 
 
@@ -16,6 +19,14 @@ class EmbeddingPredictorTest(unittest.TestCase):
         self.embedding_predictor = EmbeddingPredictor()
         self.embeddings = pd.read_csv(get_test_resource_path("subset_embeddings.csv"), index_col=0)
         self.parameters = pd.read_csv(get_test_resource_path("subset_parametric.csv"), index_col=0)
+
+    def test_r2(self):
+        calc = ClipEmbeddingCalculatorImpl()
+        target = calc.from_text("A green bicycle with thick wheels")
+        print(r2_score(
+            get_cosine_similarity(self.embeddings.values, target),
+            get_cosine_similarity(self.embedding_predictor.predict(self.parameters), target)
+        ))
 
     def test_predictor(self):
         predictions = self.embedding_predictor.predict(self.parameters)

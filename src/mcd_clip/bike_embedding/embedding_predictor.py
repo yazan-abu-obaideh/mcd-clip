@@ -54,7 +54,9 @@ __main__.ResidualBlock = _ResidualBlock
 
 _DEVICE = torch.device('cpu')
 _MODEL_FUNCTION_PATH = resource_path("resnet_0010_0005.pt")
+_SCALED_FUNCTION_PATH = resource_path("model_small.pt")
 _MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
+_SCALED_FUNCTION = torch.load(_SCALED_FUNCTION_PATH, map_location=_DEVICE)
 
 
 class EmbeddingPredictor:
@@ -64,3 +66,8 @@ class EmbeddingPredictor:
         tensor = torch.tensor(ordered.values, dtype=torch.float32)
         result_tensor = _MODEL_FUNCTION(tensor).cpu()
         return result_tensor.detach().numpy()
+
+    def predict_scaled(self, x: pd.DataFrame) -> np.ndarray:
+        ordered = pd.DataFrame(x, columns=ORDERED_COLUMNS)
+        
+        tensor = torch.tensor(ordered.values, dtype=torch.float32)
