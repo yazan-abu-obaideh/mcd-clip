@@ -1,12 +1,25 @@
 import __main__
 
+import dill
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.preprocessing import StandardScaler
 
 from mcd_clip.bike_embedding.ordered_columns import ORDERED_COLUMNS
 from mcd_clip.resource_utils import resource_path
+
+
+def _get_pickled_scaler() -> StandardScaler:
+    with open(resource_path("scaler.pk"), "rb") as file:
+        return dill.load(file)
+
+
+def _load_scaled():
+    model = _ResidualNetwork(96, 512, 256, 2, 3)
+    model.load_state_dict(torch.load(_SCALED_FUNCTION_PATH, map_location=_DEVICE))
+    return model
 
 
 class _ResidualBlock(nn.Module):
@@ -56,18 +69,26 @@ _DEVICE = torch.device('cpu')
 _MODEL_FUNCTION_PATH = resource_path("resnet_0010_0005.pt")
 _SCALED_FUNCTION_PATH = resource_path("model_small.pt")
 _MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
-_SCALED_FUNCTION = torch.load(_SCALED_FUNCTION_PATH, map_location=_DEVICE)
+_SCALED_FUNCTION = _load_scaled()
+_SCALER = _get_pickled_scaler()
 
 
 class EmbeddingPredictor:
 
     def predict(self, x: pd.DataFrame) -> np.ndarray:
-        ordered = pd.DataFrame(x, columns=ORDERED_COLUMNS)
-        tensor = torch.tensor(ordered.values, dtype=torch.float32)
-        result_tensor = _MODEL_FUNCTION(tensor).cpu()
+        return self._predict(self._get_ordered(x), _MODEL_FUNCTION)
+
+    def predict_with_new_model(self, x: pd.DataFrame) -> np.ndarray:
+        return self._predict(self._get_scaled(x), _SCALED_FUNCTION)
+
+    def _predict(self, x_data: pd.DataFrame, prediction_function: callable) -> np.ndarray:
+        tensor = torch.tensor(x_data.values, dtype=torch.float32)
+        result_tensor = prediction_function(tensor).cpu()
         return result_tensor.detach().numpy()
 
-    def predict_scaled(self, x: pd.DataFrame) -> np.ndarray:
-        ordered = pd.DataFrame(x, columns=ORDERED_COLUMNS)
-        
-        tensor = torch.tensor(ordered.values, dtype=torch.float32)
+    def _get_ordered(self, x: pd.DataFrame):
+        return pd.DataFrame(x, columns=ORDERED_COLUMNS)
+
+    def _get_scaled(self, x):
+        ordered = self._get_ordered(x)
+        return pd.DataFrame(_SCALER.transform(ordered), columns=ORDERED_COLUMNS)

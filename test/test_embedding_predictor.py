@@ -20,13 +20,20 @@ class EmbeddingPredictorTest(unittest.TestCase):
         self.embeddings = pd.read_csv(get_test_resource_path("subset_embeddings.csv"), index_col=0)
         self.parameters = pd.read_csv(get_test_resource_path("subset_parametric.csv"), index_col=0)
 
+    def test_scaled_r2(self):
+        calc = ClipEmbeddingCalculatorImpl()
+        target = calc.from_text("A green bicycle with thick wheels")
+        score = r2_score(get_cosine_similarity(self.embeddings.values, target),
+                         get_cosine_similarity(self.embedding_predictor.predict_with_new_model(self.parameters),
+                                               target))
+        self.assertGreater(score, 0.93)
+
     def test_r2(self):
         calc = ClipEmbeddingCalculatorImpl()
         target = calc.from_text("A green bicycle with thick wheels")
-        print(r2_score(
-            get_cosine_similarity(self.embeddings.values, target),
-            get_cosine_similarity(self.embedding_predictor.predict(self.parameters), target)
-        ))
+        score = r2_score(get_cosine_similarity(self.embeddings.values, target),
+                         get_cosine_similarity(self.embedding_predictor.predict(self.parameters), target))
+        self.assertGreater(score, 0.88)
 
     def test_predictor(self):
         predictions = self.embedding_predictor.predict(self.parameters)
