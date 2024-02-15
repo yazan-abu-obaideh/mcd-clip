@@ -134,15 +134,17 @@ class CombinedOptimizer:
 
     def _log_progress(self, result: pd.DataFrame):
         for column in result.columns:
-            print(f"{column} average is now [{np.average(result[column])}]")
+            result_column_ = result[column]
+            print(f"{column} | min {np.min(result_column_)}, max [{np.max(result_column_)}],"
+                  f"  average [{np.average(result_column_)}]")
 
 
 def run_generation_task() -> CounterfactualsGenerator:
     design_targets = DesignTargets(
-        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=3),
+        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=4),
                             ContinuousTarget('Sim 1 Safety Factor (Inverted)',
                                              lower_bound=0, upper_bound=1),
-                            BACK_TARGET,
+                            # BACK_TARGET,
                             ARMPIT_WRIST_TARGET,
                             # KNEE_TARGET,
                             AERODYNAMIC_DRAG_TARGET

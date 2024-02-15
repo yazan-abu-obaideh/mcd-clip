@@ -7,7 +7,7 @@ import pandas as pd
 
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
 from mcd_clip.datasets.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
-    CLIPS_COLUMNS, FRAMED_COLUMNS, ERGONOMICS_COLUMNS
+    CLIPS_COLUMNS, FRAMED_COLUMNS, ERGONOMICS_COLUMNS, BIKE_FIT_DATATYPES
 from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
 from mcd_clip.resource_utils import resource_path
@@ -69,11 +69,19 @@ class DatasetMergeTest(unittest.TestCase):
 
     def test_fit_dataset(self):
         bike_vectors = pd.read_csv(resource_path("bike_vector_df_with_id.csv"), index_col=0).drop(columns=["Bike ID"])
-        for column in bike_vectors.columns:
-            print(bike_vectors[column].describe())
-        # print("***FRAMED***")
-        # for column in self.framed.columns:
-        #     print(self.framed[column].describe())
+
+        for k, v in BIKE_FIT_DATATYPES.items():
+            bounds = BIKE_FIT_DATATYPES[k].bounds
+            self.assertAlmostEqual(
+                bounds[0],
+                bike_vectors[k].quantile(0.01),
+                places=3
+            )
+            self.assertAlmostEqual(
+                bounds[1],
+                bike_vectors[k].quantile(0.99),
+                places=3
+            )
 
     def test_fit_columns(self):
         self.assertEqual(

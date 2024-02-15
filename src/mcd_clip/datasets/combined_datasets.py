@@ -36,19 +36,26 @@ def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
     for column in dataframe.columns:
         if column in FRAMED_COLUMNS:
             _map_framed_column(result, column)
-        else:
+        elif column in CLIPS_COLUMNS:
             mapped_datatype = map_column(dataframe[column])
-            print(f"Mapped {column} to {mapped_datatype}")
+            print(f"Mapped {column} to {type(mapped_datatype)}")
             result.append(mapped_datatype)
+        else:
+            # result.append()
+            print("Mapped bike fit column to {}")
     return result
 
 
 class CombinedDataset:
+    """The hierarchy here is FRAMED -> CLIPS -> BIKE_FIT"""
+
     def __init__(self, data: pd.DataFrame):
         self._data = data
 
     @classmethod
-    def build_from_both(cls, framed_style: pd.DataFrame, clips_style: pd.DataFrame):
+    def build_from_both(cls, framed_style: pd.DataFrame,
+                        clips_style: pd.DataFrame,
+                        append_default_bike_fit_data=False):
         framed = framed_style.copy(deep=True)
         clips = clips_style.copy(deep=True)
         assert len(framed) == len(clips), "Must have the same number of rows to combine"
@@ -59,6 +66,8 @@ class CombinedDataset:
         cls._drop_clips_identical(result)
         cls._drop_clips_millimeter_columns(result)
         cls._replace_intersection(framed=framed, result=result)
+        if append_default_bike_fit_data:
+            cls._append_bike_fit_defaults(result)
         return CombinedDataset(result)
 
     def get_combined(self):
@@ -72,11 +81,7 @@ class CombinedDataset:
         data = (self.get_as_clips().copy(deep=True).rename(columns=self._reverse_map(FRAMED_TO_CLIPS_IDENTICAL))
                 .rename(columns=self._reverse_map(FRAMED_TO_CLIPS_UNITS)))
         data.drop(columns=[c for c in data.columns if c not in ERGONOMICS_COLUMNS], inplace=True)
-        data['Stem length'] = 100
-        data['Stem angle'] = -5
-        data['Handlebar style'] = 2
-        data['Crank length'] = 170
-        data['Headset spacers'] = 10
+        self._add_bike_fit_columns(data)
         return data
 
     def get_as_clips(self) -> pd.DataFrame:
@@ -151,6 +156,24 @@ class CombinedDataset:
         return {
             v: k for k, v in any_map.items()
         }
+
+    @staticmethod
+    def _append_bike_fit_defaults(data: pd.DataFrame):
+        CombinedDataset._add_bike_fit_columns(data)
+
+    @staticmethod
+    def _add_bike_fit_columns(data):
+        CombinedDataset._add_if_missing(data, 'Stem length', 100)
+        CombinedDataset._add_if_missing(data, 'Stem angle', -5)
+        CombinedDataset._add_if_missing(data, 'Handlebar style', 2)
+        CombinedDataset._add_if_missing(data, 'Crank length', 170)
+        CombinedDataset._add_if_missing(data, 'Headset spacers', 10)
+
+    @staticmethod
+    def _add_if_missing(data: pd.DataFrame, column_name: str, default_value: float):
+        if column_name not in list(data.columns):
+            print(f"Setting column {column_name} to default value {default_value}")
+            data[column_name] = default_value
 
 
 class OriginalCombinedDataset:
