@@ -71,7 +71,8 @@ class CombinedOptimizer:
         original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
         starting_dataset = CombinedDataset.build_from_both(framed_style=original_dataset.get_as_framed(),
                                                            clips_style=original_dataset.get_as_clips().drop(
-                                                               columns=CONSTANT_COLUMNS))
+                                                               columns=CONSTANT_COLUMNS),
+                                                           append_default_bike_fit_data=True)
         data_package = DataPackage(
             features_dataset=starting_dataset.get_combined(),
             predictions_dataset=self.predict(starting_dataset),
@@ -144,9 +145,9 @@ def run_generation_task() -> CounterfactualsGenerator:
         continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=4),
                             ContinuousTarget('Sim 1 Safety Factor (Inverted)',
                                              lower_bound=0, upper_bound=1),
-                            # BACK_TARGET,
+                            BACK_TARGET,
                             ARMPIT_WRIST_TARGET,
-                            # KNEE_TARGET,
+                            KNEE_TARGET,
                             AERODYNAMIC_DRAG_TARGET
                             ])
     target_embeddings = [

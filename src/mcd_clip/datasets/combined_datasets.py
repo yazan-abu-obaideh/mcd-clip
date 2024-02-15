@@ -6,7 +6,7 @@ from pymoo.core.variable import Variable, Choice, Real
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
 from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
-    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, ERGONOMICS_COLUMNS
+    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, ERGONOMICS_COLUMNS, BIKE_FIT_DATATYPES
 from mcd_clip.resource_utils import resource_path
 
 
@@ -41,8 +41,8 @@ def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
             print(f"Mapped {column} to {type(mapped_datatype)}")
             result.append(mapped_datatype)
         else:
-            # result.append()
-            print("Mapped bike fit column to {}")
+            result.append(BIKE_FIT_DATATYPES[column])
+            print(f"Mapped bike fit column {column}")
     return result
 
 
