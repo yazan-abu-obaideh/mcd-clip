@@ -67,6 +67,14 @@ class DatasetMergeTest(unittest.TestCase):
             atol=1e-2
         )
 
+    def test_fit_dataset(self):
+        bike_vectors = pd.read_csv(resource_path("bike_vector_df_with_id.csv"), index_col=0).drop(columns=["Bike ID"])
+        for column in bike_vectors.columns:
+            print(bike_vectors[column].describe())
+        # print("***FRAMED***")
+        # for column in self.framed.columns:
+        #     print(self.framed[column].describe())
+
     def test_fit_columns(self):
         self.assertEqual(
             set(ERGONOMICS_COLUMNS),

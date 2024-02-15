@@ -1,7 +1,7 @@
 import os
 import uuid
 from abc import abstractmethod, ABCMeta
-from typing import List
+from typing import List, Callable
 
 import numpy as np
 import pandas as pd
@@ -94,44 +94,57 @@ class CombinedOptimizer:
         return generator
 
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
-        predictions = self._structural_predictor.predict_unscaled(designs.get_as_framed(),
-                                                                  self._x_scaler,
-                                                                  self._y_scaler)
+        structural_predictions = self._predict_structural(designs)
+        embedding_predictions = self._predict_embedding_distances(designs)
+        result = pd.concat([structural_predictions, embedding_predictions], axis=1)
+        result = self._add_fit_measure(designs, result, calculate_drag)
+        result = self._add_fit_measure(designs, result, calculate_angles)
+        result = self._drop_irrelevant_columns(result)
+        self._log_progress(result)
+        return result
+
+    def _predict_structural(self, designs: CombinedDataset) -> pd.DataFrame:
+        return self._structural_predictor.predict_unscaled(designs.get_as_framed(),
+                                                           self._x_scaler,
+                                                           self._y_scaler)
+
+    def _drop_irrelevant_columns(self, result: pd.DataFrame) -> pd.DataFrame:
+        return result.drop(columns=[c for c in result.columns if c
+                                    not in list(self._design_targets.get_all_constrained_labels())
+                                    + self.distance_columns()])
+
+    def _predict_embedding_distances(self, designs: CombinedDataset) -> pd.DataFrame:
         designs_clips = designs.get_as_clips()
         embedding_predictions = pd.DataFrame(columns=self.distance_columns(), index=designs_clips.index)
         for idx in range(len(self._target_embeddings)):
             target = self._target_embeddings[idx].get_embedding()
             embedding_predictions[distance_column_name(idx)] = predict_from_partial_dataframe(designs_clips, target)
+        return embedding_predictions
 
-        predictions = predictions.drop(columns=[c for c in predictions.columns if c
-                                                not in list(self._design_targets.get_all_constrained_labels())])
-
-        result = pd.concat([predictions, embedding_predictions], axis=1)
-        drag_values = calculate_drag(designs.get_for_ergonomics().values, SAMPLE_RIDER)
-        result = pd.concat([result, pd.DataFrame(drag_values, index=result.index)],
-                           axis=1)
-        angles = calculate_angles(designs.get_for_ergonomics().values, SAMPLE_RIDER)
+    def _add_fit_measure(self,
+                         designs: CombinedDataset,
+                         result: pd.DataFrame,
+                         evaluation_function: Callable[[np.ndarray, np.ndarray], pd.DataFrame]):
+        angles = evaluation_function(designs.get_for_ergonomics().values, SAMPLE_RIDER)
         result = pd.concat([result, pd.DataFrame(angles, index=result.index)], axis=1)
-        self._log_nans(predictions.astype('float64'))
         return result
 
     def distance_columns(self) -> List[str]:
         return [distance_column_name(i) for i in range(len(self._target_embeddings))]
 
-    def _log_nans(self, result: pd.DataFrame):
-        nan_columns = [c for c in result.columns if result[c].isna().any()]
-        if nan_columns:
-            print(f"WARNING: found nan columns {nan_columns}")
+    def _log_progress(self, result: pd.DataFrame):
+        for column in result.columns:
+            print(f"{column} average is now [{np.average(result[column])}]")
 
 
 def run_generation_task() -> CounterfactualsGenerator:
     design_targets = DesignTargets(
-        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
+        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=3),
                             ContinuousTarget('Sim 1 Safety Factor (Inverted)',
                                              lower_bound=0, upper_bound=1),
                             BACK_TARGET,
                             ARMPIT_WRIST_TARGET,
-                            KNEE_TARGET,
+                            # KNEE_TARGET,
                             AERODYNAMIC_DRAG_TARGET
                             ])
     target_embeddings = [
@@ -146,10 +159,10 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 3
-    batch_size = 150
+    number_of_batches = 12
+    batch_size = 50
 
-    run_id = 'validations-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'bike-fit-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:

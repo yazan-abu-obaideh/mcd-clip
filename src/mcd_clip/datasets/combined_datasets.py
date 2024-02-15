@@ -69,13 +69,14 @@ class CombinedDataset:
         return pd.DataFrame(dropped, columns=FRAMED_COLUMNS)
 
     def get_for_ergonomics(self) -> pd.DataFrame:
-        data = self._data.copy(deep=True)
+        data = (self.get_as_clips().copy(deep=True).rename(columns=self._reverse_map(FRAMED_TO_CLIPS_IDENTICAL))
+                .rename(columns=self._reverse_map(FRAMED_TO_CLIPS_UNITS)))
         data.drop(columns=[c for c in data.columns if c not in ERGONOMICS_COLUMNS], inplace=True)
-        data['Stem length'] = 123
-        data['Stem angle'] = 100
+        data['Stem length'] = 100
+        data['Stem angle'] = -5
         data['Handlebar style'] = 2
         data['Crank length'] = 170
-        data['Headset spacers'] = 15
+        data['Headset spacers'] = 10
         return data
 
     def get_as_clips(self) -> pd.DataFrame:
@@ -145,6 +146,11 @@ class CombinedDataset:
         american_spelling = 'MATERIAL OHCLASS: ALUMINUM'
         data['MATERIAL OHCLASS: ALUMINIUM'] = data[american_spelling]
         data.drop(columns=[american_spelling], inplace=True)
+
+    def _reverse_map(self, any_map: dict):
+        return {
+            v: k for k, v in any_map.items()
+        }
 
 
 class OriginalCombinedDataset:
