@@ -7,8 +7,9 @@ import pandas as pd
 
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.combined_optimization.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
-    CLIPS_COLUMNS, FRAMED_COLUMNS
-from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes
+    CLIPS_COLUMNS, FRAMED_COLUMNS, ERGONOMICS_COLUMNS
+from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes, \
+    OriginalCombinedDataset
 from mcd_clip.resource_utils import resource_path
 
 
@@ -21,6 +22,7 @@ class DatasetMergeTest(unittest.TestCase):
         self.clips = pd.read_csv(resource_path('clip_sBIKED_processed.csv'), index_col=0)
         self.clips.index = [str(idx) for idx in self.clips.index]
         self._index_intersection = self._get_index_intersection()
+        self.original_combined = OriginalCombinedDataset().get_combined_dataset()
 
     def test_map_columns(self):
         framed = self.framed.loc[self._get_index_intersection()]
@@ -65,15 +67,11 @@ class DatasetMergeTest(unittest.TestCase):
             atol=1e-2
         )
 
-    def test_framed_columns(self):
-        print(self.framed.columns)
-
-    def test_clips_columns(self):
-        print(self.clips.columns)
-
-    def test_outliers(self):
-        for column in self.framed.columns:
-            print(self.framed[column].describe())
+    def test_fit_columns(self):
+        self.assertEqual(
+            set(ERGONOMICS_COLUMNS),
+            set(self.original_combined.get_for_ergonomics().columns)
+        )
 
     def test_dataset_len(self):
         self.assertEqual((len(self.framed), len(self.clips)), (14851, 4512))

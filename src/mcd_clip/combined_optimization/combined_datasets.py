@@ -69,9 +69,14 @@ class CombinedDataset:
         return pd.DataFrame(dropped, columns=FRAMED_COLUMNS)
 
     def get_for_ergonomics(self) -> pd.DataFrame:
-        dropped = self._data.drop(columns=ERGONOMICS_COLUMNS)
-        self._data['Stem length'] = 450
-        return pd.DataFrame(self._data)
+        data = self._data.copy(deep=True)
+        data.drop(columns=[c for c in data.columns if c not in ERGONOMICS_COLUMNS], inplace=True)
+        data['Stem length'] = 123
+        data['Stem angle'] = 100
+        data['Handlebar style'] = 2
+        data['Crank length'] = 170
+        data['Headset spacers'] = 15
+        return data
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)

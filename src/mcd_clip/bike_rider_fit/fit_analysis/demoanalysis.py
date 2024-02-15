@@ -3,8 +3,8 @@ import pickle
 import numpy as np
 import pandas as pd
 
-from mcd_clip.fit_analysis.interfacepoints import interface_points
-from mcd_clip.fit_analysis.vectorizedangles import all_angles, validity_mask
+from mcd_clip.bike_rider_fit.fit_analysis.interfacepoints import interface_points
+from mcd_clip.bike_rider_fit.fit_analysis.vectorizedangles import all_angles, validity_mask
 from mcd_clip.resource_utils import resource_path
 
 # from sklearn.neural_network import MLPRegressor

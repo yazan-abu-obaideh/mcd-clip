@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from mcd_clip.fit_analysis.demoanalysis_wrapped import calculate_angles, calculate_drag
+from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_angles, calculate_drag
 from mcd_clip.resource_utils import resource_path
 
 SAMPLE_RIDER = {'height': 1869.4399999999998, 'sh_height': 1522.4183722286996, 'hip_to_ankle': 859.4115496065015,
@@ -20,13 +20,14 @@ class FitAnalysisTest(unittest.TestCase):
         self.body_vector = self.to_body_vector(self._to_full_dimensions(SAMPLE_RIDER))
 
     def test_ergonomics(self):
-        angles = calculate_angles(self.bike_dataframe.values,
-                                  self.body_vector)
-        print(angles.head())
+        calculated_angles = calculate_angles(self.bike_dataframe.values,
+                                             self.body_vector)
+        for column in ['Knee Extension', 'Back Angle', 'Armpit Angle']:
+            self.assertTrue(column in calculated_angles.columns)
 
     def test_aerodynamics(self):
-        drag = calculate_drag(self.bike_dataframe.values, self.body_vector)
-        print(drag.quantile(0.1).head())
+        predicted_drag = calculate_drag(self.bike_dataframe.values, self.body_vector)
+        self.assertTrue("Aerodynamic Drag" in predicted_drag.columns)
 
     def _to_full_dimensions(self, body: dict):
         body["foot_length"] = 5.5 * 25.4

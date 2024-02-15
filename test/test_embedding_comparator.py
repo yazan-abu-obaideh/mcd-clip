@@ -3,19 +3,28 @@ import unittest
 import numpy as np
 import numpy.testing as np_test
 
-from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
+from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity, get_cosine_distance
 
 
 class EmbeddingComparatorTest(unittest.TestCase):
-    def test_cosine_similarity(self):
+    def test_cosine_similarity_and_distance(self):
         array = np.array([[1, 2, 3]])
-        self.assertEqual(
+        np_test.assert_array_equal(
             get_cosine_similarity(array, np.array([1, 2, 3])),
-            1
+            [1]
+        )
+        np_test.assert_array_equal(
+            get_cosine_distance(array, np.array([1, 2, 3])),
+            [0]
         )
         np_test.assert_array_almost_equal(
             get_cosine_similarity(np.array([[1, 1]]), np.array([0, 1])),
             [0.707],
+            decimal=3
+        )
+        np_test.assert_array_almost_equal(
+            get_cosine_distance(np.array([[1, 1]]), np.array([0, 1])),
+            [0.293],
             decimal=3
         )
 

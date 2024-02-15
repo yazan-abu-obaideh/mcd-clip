@@ -8,7 +8,7 @@ import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
 
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-from mcd_clip.bike_embedding.embedding_similarity_optimizer import predict_cosine_distance, CONSTANT_COLUMNS
+from mcd_clip.bike_embedding.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
 from mcd_clip.biked.load_data import load_augmented_framed_dataset
 from mcd_clip.biked.structural_predictor import StructuralPredictor
 from mcd_clip.bke_validations.validations_lists import COMBINED_VALIDATION_FUNCTIONS
@@ -97,7 +97,7 @@ class CombinedOptimizer:
         embedding_predictions = pd.DataFrame(columns=self.distance_columns(), index=designs_clips.index)
         for idx in range(len(self._target_embeddings)):
             target = self._target_embeddings[idx].get_embedding()
-            embedding_predictions[distance_column_name(idx)] = predict_cosine_distance(designs_clips, target)
+            embedding_predictions[distance_column_name(idx)] = predict_from_partial_dataframe(designs_clips, target)
 
         predictions = predictions.drop(columns=[c for c in predictions.columns if c
                                                 not in list(self._design_targets.get_all_constrained_labels())])

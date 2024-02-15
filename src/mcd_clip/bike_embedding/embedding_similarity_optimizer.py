@@ -1,8 +1,10 @@
+from typing import Union
+
 import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, CounterfactualsGenerator, ContinuousTarget
 
-from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
+from mcd_clip.bike_embedding.embedding_comparator import get_cosine_distance
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
 from mcd_clip.bke_validations.validations_lists import CLIPS_VALIDATION_FUNCTIONS
 from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
@@ -25,17 +27,12 @@ FEATURES = get_features()
 TRIMMED_FEATURES = FEATURES.drop(columns=CONSTANT_COLUMNS)
 
 
-def get_labels(target_embedding: np.ndarray):
-    predictions = PREDICTOR.predict_with_new_model(FEATURES)
-    return 1 - get_cosine_similarity(predictions, target_embedding)
+def predict_from_partial_dataframe(designs, target_embedding):
+    full_designs_df = to_full_dataframe(designs)
+    return get_cosine_distance(PREDICTOR.predict(full_designs_df), target_embedding)
 
 
-def predict_cosine_distance(designs, target_embedding):
-    designs_copy = to_full_dataframe(designs)
-    return 1 - get_cosine_similarity(PREDICTOR.predict_with_new_model(designs_copy), target_embedding)
-
-
-def to_full_dataframe(designs):
+def to_full_dataframe(designs: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
     designs_copy = pd.DataFrame(designs, columns=TRIMMED_FEATURES.columns)
     designs_copy = designs_copy.fillna(TRIMMED_FEATURES.mean())
     for column in CONSTANT_COLUMNS:
@@ -52,13 +49,15 @@ def map_datatypes():
 
 
 def build_generator(target_embedding: np.ndarray,
+                    maximum_cosine_distance,
                     pop_size=1000,
                     initialize_from_dataset=False,
-                    maximum_cosine_distance=0.8):
+                    ):
     data_package = DataPackage(features_dataset=TRIMMED_FEATURES,
-                               predictions_dataset=pd.DataFrame(get_labels(target_embedding),
-                                                                columns=["cosine_distance"],
-                                                                index=TRIMMED_FEATURES.index),
+                               predictions_dataset=pd.DataFrame(
+                                   get_cosine_distance(PREDICTOR.predict(FEATURES), target_embedding),
+                                   columns=["cosine_distance"],
+                                   index=TRIMMED_FEATURES.index),
                                query_x=TRIMMED_FEATURES.iloc[0:1],
                                design_targets=DesignTargets([ContinuousTarget(label="cosine_distance",
                                                                               lower_bound=0,
@@ -68,7 +67,7 @@ def build_generator(target_embedding: np.ndarray,
 
     problem = MultiObjectiveProblem(data_package=data_package,
                                     prediction_function=lambda design:
-                                    predict_cosine_distance(design, target_embedding),
+                                    predict_from_partial_dataframe(design, target_embedding),
                                     constraint_functions=CLIPS_VALIDATION_FUNCTIONS)
 
     return CounterfactualsGenerator(problem=problem,
@@ -83,9 +82,10 @@ def optimize_similarity(target_embedding: np.ndarray,
                         sample_from_dataset=False,
                         maximum_cosine_distance=0.8):
     generator = build_generator(target_embedding,
+                                maximum_cosine_distance,
                                 pop_size,
                                 initialize_from_dataset,
-                                maximum_cosine_distance)
+                                )
     generator.generate(n_generations=n_generations)
     return generator.sample_with_dtai(num_samples=1000, gower_weight=1,
                                       avg_gower_weight=1, cfc_weight=1,

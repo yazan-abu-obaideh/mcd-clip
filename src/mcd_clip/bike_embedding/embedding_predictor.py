@@ -67,9 +67,7 @@ __main__.ResidualNetwork = _ResidualNetwork
 __main__.ResidualBlock = _ResidualBlock
 
 _DEVICE = torch.device('cpu')
-_MODEL_FUNCTION_PATH = resource_path("resnet_0010_0005.pt")
 _SCALED_FUNCTION_PATH = resource_path("model_small.pt")
-_MODEL_FUNCTION = torch.load(_MODEL_FUNCTION_PATH, map_location=_DEVICE)
 _SCALED_FUNCTION = _load_scaled()
 _SCALER = _get_pickled_scaler()
 
@@ -77,9 +75,6 @@ _SCALER = _get_pickled_scaler()
 class EmbeddingPredictor:
 
     def predict(self, x: pd.DataFrame) -> np.ndarray:
-        return self._predict(self._get_ordered(x), _MODEL_FUNCTION)
-
-    def predict_with_new_model(self, x: pd.DataFrame) -> np.ndarray:
         return self._predict(self._get_scaled(x), _SCALED_FUNCTION)
 
     def _predict(self, x_data: pd.DataFrame, prediction_function: callable) -> np.ndarray:

@@ -24,21 +24,14 @@ class EmbeddingPredictorTest(unittest.TestCase):
         calc = ClipEmbeddingCalculatorImpl()
         target = calc.from_text("A green bicycle with thick wheels")
         score = r2_score(get_cosine_similarity(self.embeddings.values, target),
-                         get_cosine_similarity(self.embedding_predictor.predict_with_new_model(self.parameters),
+                         get_cosine_similarity(self.embedding_predictor.predict(self.parameters),
                                                target))
         self.assertGreater(score, 0.93)
 
     def test_scaled_predict_one(self):
-        self.embedding_predictor.predict_with_new_model(self.parameters.iloc[0:1])
+        self.embedding_predictor.predict(self.parameters.iloc[0:1])
 
-    def test_r2(self):
-        calc = ClipEmbeddingCalculatorImpl()
-        target = calc.from_text("A green bicycle with thick wheels")
-        score = r2_score(get_cosine_similarity(self.embeddings.values, target),
-                         get_cosine_similarity(self.embedding_predictor.predict(self.parameters), target))
-        self.assertGreater(score, 0.88)
-
-    def test_predictor(self):
+    def test_shape(self):
         predictions = self.embedding_predictor.predict(self.parameters)
         self.assertEqual(predictions.shape, (len(self.parameters), 512))
 
