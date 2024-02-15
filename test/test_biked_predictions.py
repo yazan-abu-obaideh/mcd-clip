@@ -3,8 +3,8 @@ import unittest
 import numpy as np
 from sklearn.metrics import r2_score
 
-from mcd_clip.biked.load_data import load_augmented_framed_dataset
-from mcd_clip.biked.structural_predictor import StructuralPredictor
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+from mcd_clip.structural.structural_predictor import StructuralPredictor
 
 
 class BikedPredictionsTest(unittest.TestCase):

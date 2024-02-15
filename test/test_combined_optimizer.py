@@ -2,7 +2,7 @@ import unittest
 
 from decode_mcd import DesignTargets, ContinuousTarget
 
-from mcd_clip.combined_optimization.combined_optimizer import CombinedOptimizer, TextEmbeddingTarget
+from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, TextEmbeddingTarget
 
 
 class CombinedOptimizerTest(unittest.TestCase):

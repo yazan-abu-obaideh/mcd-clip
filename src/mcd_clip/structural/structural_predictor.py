@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from mcd_clip.biked.MultilabelPredictor import MultilabelPredictor
+from mcd_clip.structural.MultilabelPredictor import MultilabelPredictor
 from mcd_clip.resource_utils import resource_path
 import __main__
 

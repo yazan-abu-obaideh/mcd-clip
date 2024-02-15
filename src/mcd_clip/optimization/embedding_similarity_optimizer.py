@@ -6,8 +6,8 @@ from decode_mcd import DesignTargets, DataPackage, MultiObjectiveProblem, Counte
 
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_distance
 from mcd_clip.bike_embedding.embedding_predictor import EmbeddingPredictor
-from mcd_clip.bke_validations.validations_lists import CLIPS_VALIDATION_FUNCTIONS
-from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
+from mcd_clip.datasets.validations_lists import CLIPS_VALIDATION_FUNCTIONS
+from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.resource_utils import resource_path
 
 PREDICTOR = EmbeddingPredictor()

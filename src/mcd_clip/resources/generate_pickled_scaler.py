@@ -1,7 +1,7 @@
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 
-from mcd_clip.combined_optimization.columns_constants import CLIPS_COLUMNS
+from mcd_clip.datasets.columns_constants import CLIPS_COLUMNS
 import dill
 
 ALL_PARAMETRIC_CSV_PATH = ""  # insert here!

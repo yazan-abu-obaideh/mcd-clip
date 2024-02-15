@@ -3,9 +3,9 @@ from typing import List
 import pandas as pd
 from pymoo.core.variable import Variable, Choice, Real
 
-from mcd_clip.biked.load_data import load_augmented_framed_dataset
-from mcd_clip.clips_dataset_utils.datatypes_mapper import map_column
-from mcd_clip.combined_optimization.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+from mcd_clip.datasets.clips.datatypes_mapper import map_column
+from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
     FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, ERGONOMICS_COLUMNS
 from mcd_clip.resource_utils import resource_path
 

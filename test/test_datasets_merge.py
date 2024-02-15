@@ -5,10 +5,10 @@ import numpy as np
 import numpy.testing as np_test
 import pandas as pd
 
-from mcd_clip.biked.load_data import load_augmented_framed_dataset
-from mcd_clip.combined_optimization.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+from mcd_clip.datasets.columns_constants import FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, \
     CLIPS_COLUMNS, FRAMED_COLUMNS, ERGONOMICS_COLUMNS
-from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes, \
+from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
 from mcd_clip.resource_utils import resource_path
 

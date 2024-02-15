@@ -3,7 +3,7 @@ import unittest
 from pymoo.core.variable import Real, Variable, Choice, Integer
 
 from mcd_clip.bike_embedding import clip_embedding_calculator
-from mcd_clip.bike_embedding.embedding_similarity_optimizer import get_features, map_datatypes, optimize_similarity
+from mcd_clip.optimization.embedding_similarity_optimizer import get_features, map_datatypes, optimize_similarity
 
 
 class EmbeddingSimilarityOptimizerTest(unittest.TestCase):

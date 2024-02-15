@@ -8,13 +8,17 @@ import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
 
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-from mcd_clip.bike_embedding.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
-from mcd_clip.biked.load_data import load_augmented_framed_dataset
-from mcd_clip.biked.structural_predictor import StructuralPredictor
-from mcd_clip.bke_validations.validations_lists import COMBINED_VALIDATION_FUNCTIONS
-from mcd_clip.combined_optimization.combined_datasets import CombinedDataset, map_combined_datatypes, \
+from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_drag, calculate_angles
+from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
+    AERODYNAMIC_DRAG_TARGET
+from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+from mcd_clip.structural.structural_predictor import StructuralPredictor
+from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
+from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
 from mcd_clip.resource_utils import resource_path, run_result_path
+from test_fit_analysis import SAMPLE_RIDER
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 ORIGINAL_COMBINED = OriginalCombinedDataset()
@@ -103,7 +107,11 @@ class CombinedOptimizer:
                                                 not in list(self._design_targets.get_all_constrained_labels())])
 
         result = pd.concat([predictions, embedding_predictions], axis=1)
-
+        drag_values = calculate_drag(designs.get_for_ergonomics().values, SAMPLE_RIDER)
+        result = pd.concat([result, pd.DataFrame(drag_values, index=result.index)],
+                           axis=1)
+        angles = calculate_angles(designs.get_for_ergonomics().values, SAMPLE_RIDER)
+        result = pd.concat([result, pd.DataFrame(angles, index=result.index)], axis=1)
         self._log_nans(predictions.astype('float64'))
         return result
 
@@ -117,9 +125,15 @@ class CombinedOptimizer:
 
 
 def run_generation_task() -> CounterfactualsGenerator:
-    design_targets = DesignTargets(continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
-                                                       ContinuousTarget('Sim 1 Safety Factor (Inverted)',
-                                                                        lower_bound=0, upper_bound=1), ])
+    design_targets = DesignTargets(
+        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=2),
+                            ContinuousTarget('Sim 1 Safety Factor (Inverted)',
+                                             lower_bound=0, upper_bound=1),
+                            BACK_TARGET,
+                            ARMPIT_WRIST_TARGET,
+                            KNEE_TARGET,
+                            AERODYNAMIC_DRAG_TARGET
+                            ])
     target_embeddings = [
         TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
         ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
