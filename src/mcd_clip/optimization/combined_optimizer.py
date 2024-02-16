@@ -153,7 +153,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     design_targets = DesignTargets(
         continuous_targets=[
             ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=10),
+            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=6),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
@@ -170,10 +170,10 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 4
-    batch_size = 90
+    number_of_batches = 5
+    batch_size = 100
 
-    run_id = 'bike-fit-starting-bike-12-13' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = '500-gens-bike-fit' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
