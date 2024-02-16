@@ -11,13 +11,13 @@ from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalcu
 from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_drag, calculate_angles
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET
-from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
-from mcd_clip.structural.load_data import load_augmented_framed_dataset
-from mcd_clip.structural.structural_predictor import StructuralPredictor
-from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
-from mcd_clip.resource_utils import resource_path, run_result_path
+from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
+from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
+from mcd_clip.resource_utils import run_result_path, resource_path
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+from mcd_clip.structural.structural_predictor import StructuralPredictor
 from test_fit_analysis import SAMPLE_RIDER
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
@@ -78,7 +78,7 @@ class CombinedOptimizer:
         data_package = DataPackage(
             features_dataset=starting_dataset.get_combined(),
             predictions_dataset=self.predict(starting_dataset),
-            query_x=starting_dataset.get_combined().iloc[0:1],
+            query_x=starting_dataset.get_combined().iloc[12:13],
             design_targets=self._design_targets,
             datatypes=map_combined_datatypes(starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
@@ -147,18 +147,20 @@ class CombinedOptimizer:
 
 def run_generation_task() -> CounterfactualsGenerator:
     target_embeddings = [
-        TextEmbeddingTarget(text_target='A yellow mountain bike'),
+        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
+        ImageEmbeddingTarget(image_path=resource_path('mtb.png'))
     ]
     design_targets = DesignTargets(
-        continuous_targets=[ContinuousTarget('Sim 1 Safety Factor (Inverted)',
-                                             lower_bound=0, upper_bound=1),
-                            BACK_TARGET,
-                            ARMPIT_WRIST_TARGET,
-                            KNEE_TARGET,
-                            AERODYNAMIC_DRAG_TARGET
-                            ])
+        continuous_targets=[
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=10),
+            BACK_TARGET,
+            ARMPIT_WRIST_TARGET,
+            KNEE_TARGET,
+            AERODYNAMIC_DRAG_TARGET
+        ])
 
-    bonus_objectives = ["Model Mass"]
+    bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
 
     optimizer = CombinedOptimizer(
         design_targets=design_targets,
@@ -171,7 +173,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     number_of_batches = 4
     batch_size = 90
 
-    run_id = 'yellow-mountain-bike-fit-mass-bonus' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'bike-fit-starting-bike-12-13' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:

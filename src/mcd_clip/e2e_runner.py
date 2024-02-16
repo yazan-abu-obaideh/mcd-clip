@@ -97,9 +97,9 @@ def run_counterfactual_generation_task(run_description,
 
 
 if __name__ == "__main__":
-    n_generations = 200
+    n_generations = 300
     run_counterfactual_generation_task(
-        run_description=f"refactor yellow mountain bike with thick tires",
+        run_description=f"pink road-racing bike with water bottles",
         total_generations=n_generations,
         number_of_batches=4,
-        target_embedding=EMBEDDING_CALCULATOR.from_text('A yellow mountain bike with thick tires'))
+        target_embedding=EMBEDDING_CALCULATOR.from_text('a pink road-racing bike with water bottles'))
