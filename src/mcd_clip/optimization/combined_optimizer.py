@@ -78,7 +78,7 @@ class CombinedOptimizer:
         data_package = DataPackage(
             features_dataset=starting_dataset.get_combined(),
             predictions_dataset=self.predict(starting_dataset),
-            query_x=starting_dataset.get_combined().iloc[12:13],
+            query_x=starting_dataset.get_combined().iloc[0:1],
             design_targets=self._design_targets,
             datatypes=map_combined_datatypes(starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
