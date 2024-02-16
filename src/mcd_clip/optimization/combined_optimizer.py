@@ -157,7 +157,7 @@ def run_generation_task() -> CounterfactualsGenerator:
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
-            AERODYNAMIC_DRAG_TARGET
+            # AERODYNAMIC_DRAG_TARGET
         ])
 
     bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
