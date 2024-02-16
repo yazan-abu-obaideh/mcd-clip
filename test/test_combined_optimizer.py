@@ -11,7 +11,8 @@ class CombinedOptimizerTest(unittest.TestCase):
             design_targets=DesignTargets(
                 continuous_targets=[ContinuousTarget(label='Model Mass', lower_bound=0, upper_bound=2)]
             ),
-            target_embeddings=[TextEmbeddingTarget('A yellow mountain bike')]
+            target_embeddings=[TextEmbeddingTarget('A yellow mountain bike')],
+            extra_bonus_objectives=[]
         )
 
     def test_generator_runs(self):

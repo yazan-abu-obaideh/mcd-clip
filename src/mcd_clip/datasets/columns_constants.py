@@ -1,5 +1,3 @@
-from pymoo.core.variable import Real
-
 FRAMED_TO_CLIPS_UNITS = {'SS OD': 'ssd', 'HT Length': 'Head tube length textfield', 'CS OD': 'csd',
                          'ST UX': 'Seat tube extension2', 'HT LX': 'Head tube lower extension2',
                          'HT UX': 'Head tube upper extension2', 'ST Length': 'Seat tube length',
@@ -13,19 +11,20 @@ FRAMED_TO_CLIPS_IDENTICAL = {'HT Angle': 'Head angle', 'SSB_Include': 'SEATSTAYb
 
 CLIPS_IGNORED_MATERIAL = ['MATERIAL OHCLASS: BAMBOO', 'MATERIAL OHCLASS: CARBON', 'MATERIAL OHCLASS: OTHER']
 
-ERGONOMICS_COLUMNS = [
+BIKE_FIT_COLUMNS = [
     "DT Length", "HT Length", "HT Angle", "HT LX", "Stack",
     "ST Length", "ST Angle",
     "Seatpost LENGTH",
     "Saddle height", "Stem length", "Stem angle", "Headset spacers", "Crank length", "Handlebar style"
 ]
 
-BIKE_FIT_DATATYPES = {
-    "Stem length": Real(bounds=(25.45, 140.0)),
-    "Stem angle": Real(bounds=(-30.0, 32.55)),
-    "Crank length": Real(bounds=(142.5, 185.0)),
-    "Headset spacers": Real(bounds=(0.0, 50.0))
-}
+UNIQUE_BIKE_FIT_COLUMNS = [
+    'Stem length',
+    'Stem angle',
+    'Handlebar style',
+    'Crank length',
+    'Headset spacers',
+]
 
 FRAMED_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium',
                   'SSB_Include', 'CSB_Include', 'CS Length', 'BB Drop', 'Stack', 'SS E',

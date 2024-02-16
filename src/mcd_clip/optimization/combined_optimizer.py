@@ -40,7 +40,7 @@ class TextEmbeddingTarget(EmbeddingTarget):
         self._embedding = EMBEDDING_CALCULATOR.from_text(self._text_target)
 
     def __str__(self):
-        return f"TextEmbeddingTarget: [{self._text_target}]"
+        return f"TextEmbeddingTarget: [{str(self._text_target)}]"
 
     def get_embedding(self) -> np.ndarray:
         return self._embedding
@@ -52,7 +52,7 @@ class ImageEmbeddingTarget(EmbeddingTarget):
         self._embedding = EMBEDDING_CALCULATOR.from_image_path(image_path)
 
     def __str__(self):
-        return f"ImageEmbeddingTarget: [{os.path.split(self._image_path)[-1]}]"
+        return f"ImageEmbeddingTarget: [{str(os.path.split(self._image_path)[-1])}]"
 
     def get_embedding(self) -> np.ndarray:
         return self._embedding
@@ -61,25 +61,27 @@ class ImageEmbeddingTarget(EmbeddingTarget):
 class CombinedOptimizer:
     def __init__(self,
                  design_targets: DesignTargets,
-                 target_embeddings: List[EmbeddingTarget]):
+                 target_embeddings: List[EmbeddingTarget],
+                 extra_bonus_objectives: List[str]):
         self._target_embeddings = target_embeddings
         _, y, self._x_scaler, self._y_scaler = load_augmented_framed_dataset()
         self._design_targets = design_targets
         self._structural_predictor = StructuralPredictor()
+        self._extra_bonus_objectives = extra_bonus_objectives or []
 
     def build_generator(self) -> CounterfactualsGenerator:
         original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
-        starting_dataset = CombinedDataset.build_from_both(framed_style=original_dataset.get_as_framed(),
-                                                           clips_style=original_dataset.get_as_clips().drop(
-                                                               columns=CONSTANT_COLUMNS),
-                                                           append_default_bike_fit_data=True)
+        starting_dataset = CombinedDataset.build_from_three(framed_style=original_dataset.get_as_framed(),
+                                                            clips_style=original_dataset.get_as_clips().drop(
+                                                                columns=CONSTANT_COLUMNS),
+                                                            bike_fit_style=original_dataset.get_as_bike_fit())
         data_package = DataPackage(
             features_dataset=starting_dataset.get_combined(),
             predictions_dataset=self.predict(starting_dataset),
             query_x=starting_dataset.get_combined().iloc[0:1],
             design_targets=self._design_targets,
             datatypes=map_combined_datatypes(starting_dataset.get_combined()),
-            bonus_objectives=list(self._design_targets.get_all_constrained_labels()) + self.distance_columns()
+            bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
         )
         problem = MultiObjectiveProblem(
             data_package=data_package,
@@ -104,6 +106,10 @@ class CombinedOptimizer:
         self._log_progress(result)
         return result
 
+    def _get_relevant_columns(self) -> List[str]:
+        return list(
+            self._design_targets.get_all_constrained_labels()) + self._extra_bonus_objectives + self.distance_columns()
+
     def _predict_structural(self, designs: CombinedDataset) -> pd.DataFrame:
         return self._structural_predictor.predict_unscaled(designs.get_as_framed(),
                                                            self._x_scaler,
@@ -111,8 +117,7 @@ class CombinedOptimizer:
 
     def _drop_irrelevant_columns(self, result: pd.DataFrame) -> pd.DataFrame:
         return result.drop(columns=[c for c in result.columns if c
-                                    not in list(self._design_targets.get_all_constrained_labels())
-                                    + self.distance_columns()])
+                                    not in self._get_relevant_columns()])
 
     def _predict_embedding_distances(self, designs: CombinedDataset) -> pd.DataFrame:
         designs_clips = designs.get_as_clips()
@@ -126,7 +131,7 @@ class CombinedOptimizer:
                          designs: CombinedDataset,
                          result: pd.DataFrame,
                          evaluation_function: Callable[[np.ndarray, np.ndarray], pd.DataFrame]):
-        angles = evaluation_function(designs.get_for_ergonomics().values, SAMPLE_RIDER)
+        angles = evaluation_function(designs.get_as_bike_fit().values, SAMPLE_RIDER)
         result = pd.concat([result, pd.DataFrame(angles, index=result.index)], axis=1)
         return result
 
@@ -141,31 +146,32 @@ class CombinedOptimizer:
 
 
 def run_generation_task() -> CounterfactualsGenerator:
+    target_embeddings = [
+        TextEmbeddingTarget(text_target='A yellow mountain bike'),
+    ]
     design_targets = DesignTargets(
-        continuous_targets=[ContinuousTarget('Model Mass', lower_bound=0, upper_bound=4),
-                            ContinuousTarget('Sim 1 Safety Factor (Inverted)',
+        continuous_targets=[ContinuousTarget('Sim 1 Safety Factor (Inverted)',
                                              lower_bound=0, upper_bound=1),
                             BACK_TARGET,
                             ARMPIT_WRIST_TARGET,
                             KNEE_TARGET,
                             AERODYNAMIC_DRAG_TARGET
                             ])
-    target_embeddings = [
-        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
-        ImageEmbeddingTarget(image_path=resource_path('mtb.png')),
-    ]
+
+    bonus_objectives = ["Model Mass"]
 
     optimizer = CombinedOptimizer(
         design_targets=design_targets,
-        target_embeddings=target_embeddings
+        target_embeddings=target_embeddings,
+        extra_bonus_objectives=bonus_objectives
     )
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 12
-    batch_size = 50
+    number_of_batches = 4
+    batch_size = 90
 
-    run_id = 'bike-fit-combined-run-' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'yellow-mountain-bike-fit-mass-bonus' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
@@ -178,7 +184,7 @@ def run_generation_task() -> CounterfactualsGenerator:
         cumulative_gens = batch_size * i
         generator.generate(n_generations=cumulative_gens)
         sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
-                                                cfc_weight=1, diversity_weight=1)
+                                                cfc_weight=1, diversity_weight=0.1)
         sampled.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
         generator.save(os.path.join(run_dir, f'generator_{cumulative_gens}'))
     return generator
