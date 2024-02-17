@@ -23,6 +23,12 @@ from test_fit_analysis import SAMPLE_RIDER
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 ORIGINAL_COMBINED = OriginalCombinedDataset()
 
+_AVG_GOWER_INDEX = -1
+
+_CHANGED_FEATURE_INDEX = -2
+
+_GOWER_INDEX = -3
+
 
 def distance_column_name(column_index: int):
     return f"embedding_distance_{column_index + 1}"
@@ -159,6 +165,14 @@ class CombinedOptimizer:
         return CombinedDataset(self._starting_dataset.get_combined().iloc[design_index: design_index + 1])
 
 
+def _to_scores_dataframe(scores: np.ndarray):
+    data_frame = pd.DataFrame(np.zeros(shape=(scores.shape[0], 3)))
+    data_frame['gower_distance'] = scores[:, _GOWER_INDEX]
+    data_frame['avg_gower_distance'] = scores[:, _AVG_GOWER_INDEX]
+    data_frame['changed_feature_ratio'] = scores[:, _CHANGED_FEATURE_INDEX]
+    return data_frame
+
+
 def run_generation_task() -> CounterfactualsGenerator:
     target_embeddings = [
         TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
@@ -188,7 +202,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     number_of_batches = 3
     batch_size = 35
 
-    run_id = 'few-gens-bike-fit' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'full-scores-fit-bikes-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
@@ -202,11 +216,23 @@ def run_generation_task() -> CounterfactualsGenerator:
         generator.generate(n_generations=cumulative_gens)
         sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
                                                 cfc_weight=1, diversity_weight=0.1)
-        predictions = optimizer.predict(CombinedDataset(sampled))
-        result = pd.concat([sampled, predictions], axis=1)
-        assert len(result) == len(predictions), "concat failed"
+        scores_array = _get_scores_array(generator, sampled)
+        result = pd.concat(
+            [sampled,
+             _to_scores_dataframe(scores_array),
+             optimizer.predict(CombinedDataset(sampled))
+             ],
+            axis=1
+        )
+        assert len(sampled) == len(result), "concat failed"
         result.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
     return generator
+
+
+def _get_scores_array(generator, sampled):
+    result_dict = {}
+    generator._problem._evaluate(sampled.values, result_dict)
+    return result_dict['F']
 
 
 if __name__ == '__main__':
