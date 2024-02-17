@@ -89,8 +89,7 @@ class CombinedDataset:
         result = self._get_bike_fit_from_clips()
         self._append_unique_bike_fit_columns(result)
         self._append_bike_fit_defaults(result)
-        result.drop(columns=[c for c in result.columns if c not in BIKE_FIT_COLUMNS], inplace=True)
-        return result
+        return pd.DataFrame(result, columns=BIKE_FIT_COLUMNS)
 
     def _get_bike_fit_from_clips(self):
         return (self.get_as_clips().copy(deep=True).rename(
@@ -165,9 +164,9 @@ class CombinedDataset:
         data['MATERIAL OHCLASS: ALUMINIUM'] = data[american_spelling]
         data.drop(columns=[american_spelling], inplace=True)
 
-    def _reverse_map(self, any_map: dict):
+    def _reverse_map(self, one_to_one_map: dict):
         return {
-            v: k for k, v in any_map.items()
+            v: k for k, v in one_to_one_map.items()
         }
 
     @staticmethod

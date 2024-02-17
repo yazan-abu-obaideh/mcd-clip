@@ -60,6 +60,7 @@ class ImageEmbeddingTarget(EmbeddingTarget):
 
 class CombinedOptimizer:
     def __init__(self,
+                 starting_design_index: int,
                  design_targets: DesignTargets,
                  target_embeddings: List[EmbeddingTarget],
                  extra_bonus_objectives: List[str]):
@@ -68,25 +69,28 @@ class CombinedOptimizer:
         self._design_targets = design_targets
         self._structural_predictor = StructuralPredictor()
         self._extra_bonus_objectives = extra_bonus_objectives or []
+        self._starting_dataset = self._build_starting_dataset()
+        self._starting_design = self._get_starting_design(starting_design_index)
+        self._log_starting_performance()
+
+    def _log_starting_performance(self):
+        predictions = self.predict(self._starting_design)
+        for column in predictions.columns:
+            print(f"Starting design has in column {column} value {predictions[column].values[0]}")
 
     def build_generator(self) -> CounterfactualsGenerator:
-        original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
-        starting_dataset = CombinedDataset.build_from_three(framed_style=original_dataset.get_as_framed(),
-                                                            clips_style=original_dataset.get_as_clips().drop(
-                                                                columns=CONSTANT_COLUMNS),
-                                                            bike_fit_style=original_dataset.get_as_bike_fit())
         data_package = DataPackage(
-            features_dataset=starting_dataset.get_combined(),
-            predictions_dataset=self.predict(starting_dataset),
-            query_x=starting_dataset.get_combined().iloc[0:1],
+            features_dataset=self._starting_dataset.get_combined(),
+            predictions_dataset=self.predict(self._starting_dataset),
+            query_x=self._starting_design.get_combined(),
             design_targets=self._design_targets,
-            datatypes=map_combined_datatypes(starting_dataset.get_combined()),
+            datatypes=map_combined_datatypes(self._starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
         )
         problem = MultiObjectiveProblem(
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
-                pd.DataFrame(d, columns=starting_dataset.get_combined().columns))),
+                pd.DataFrame(d, columns=self._starting_dataset.get_combined().columns))),
             constraint_functions=COMBINED_VALIDATION_FUNCTIONS
         )
         generator = CounterfactualsGenerator(
@@ -95,6 +99,13 @@ class CombinedOptimizer:
             initialize_from_dataset=True,
         )
         return generator
+
+    def _build_starting_dataset(self) -> CombinedDataset:
+        original_dataset = ORIGINAL_COMBINED.get_combined_dataset()
+        return CombinedDataset.build_from_three(framed_style=original_dataset.get_as_framed(),
+                                                clips_style=original_dataset.get_as_clips().drop(
+                                                    columns=CONSTANT_COLUMNS),
+                                                bike_fit_style=original_dataset.get_as_bike_fit())
 
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
         structural_predictions = self._predict_structural(designs)
@@ -144,6 +155,9 @@ class CombinedOptimizer:
             print(f"{column} | min {np.min(result_column_)}, max [{np.max(result_column_)}],"
                   f"  average [{np.average(result_column_)}]")
 
+    def _get_starting_design(self, design_index: int) -> CombinedDataset:
+        return CombinedDataset(self._starting_dataset.get_combined().iloc[design_index: design_index + 1])
+
 
 def run_generation_task() -> CounterfactualsGenerator:
     target_embeddings = [
@@ -163,6 +177,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
 
     optimizer = CombinedOptimizer(
+        starting_design_index=0,
         design_targets=design_targets,
         target_embeddings=target_embeddings,
         extra_bonus_objectives=bonus_objectives
@@ -170,10 +185,10 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 5
-    batch_size = 100
+    number_of_batches = 3
+    batch_size = 35
 
-    run_id = '500-gens-bike-fit' + str(uuid.uuid4().fields[-1])[:5]
+    run_id = 'few-gens-bike-fit' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
     with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
@@ -187,8 +202,10 @@ def run_generation_task() -> CounterfactualsGenerator:
         generator.generate(n_generations=cumulative_gens)
         sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
                                                 cfc_weight=1, diversity_weight=0.1)
-        sampled.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
-        generator.save(os.path.join(run_dir, f'generator_{cumulative_gens}'))
+        predictions = optimizer.predict(CombinedDataset(sampled))
+        result = pd.concat([sampled, predictions], axis=1)
+        assert len(result) == len(predictions), "concat failed"
+        result.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
     return generator
 
 
