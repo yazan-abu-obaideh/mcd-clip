@@ -66,7 +66,7 @@ class ImageEmbeddingTarget(EmbeddingTarget):
 
 class CombinedOptimizer:
     def __init__(self,
-                 starting_design_index: int,
+                 starting_design_index: str,
                  design_targets: DesignTargets,
                  target_embeddings: List[EmbeddingTarget],
                  extra_bonus_objectives: List[str]):
@@ -76,11 +76,11 @@ class CombinedOptimizer:
         self._structural_predictor = StructuralPredictor()
         self._extra_bonus_objectives = extra_bonus_objectives or []
         self._starting_dataset = self._build_starting_dataset()
-        self._starting_design = self._get_starting_design(starting_design_index)
+        self.starting_design = self._get_starting_design(starting_design_index)
         self._log_starting_performance()
 
     def _log_starting_performance(self):
-        predictions = self.predict(self._starting_design)
+        predictions = self.predict(self.starting_design)
         for column in predictions.columns:
             print(f"Starting design has in column {column} value {predictions[column].values[0]}")
 
@@ -88,7 +88,7 @@ class CombinedOptimizer:
         data_package = DataPackage(
             features_dataset=self._starting_dataset.get_combined(),
             predictions_dataset=self.predict(self._starting_dataset),
-            query_x=self._starting_design.get_combined(),
+            query_x=self.starting_design.get_combined(),
             design_targets=self._design_targets,
             datatypes=map_combined_datatypes(self._starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
@@ -161,8 +161,12 @@ class CombinedOptimizer:
             print(f"{column} | min {np.min(result_column_)}, max [{np.max(result_column_)}],"
                   f"  average [{np.average(result_column_)}]")
 
-    def _get_starting_design(self, design_index: int) -> CombinedDataset:
-        return CombinedDataset(self._starting_dataset.get_combined().iloc[design_index: design_index + 1])
+    def _get_starting_design(self, design_index: str) -> CombinedDataset:
+        return CombinedDataset(
+            pd.DataFrame.from_records(
+                [self._starting_dataset.get_combined().loc[design_index].to_dict()]
+            )
+        )
 
 
 def _to_scores_dataframe(scores: np.ndarray):
@@ -181,7 +185,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     design_targets = DesignTargets(
         continuous_targets=[
             ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=6),
+            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=5.5),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
@@ -191,7 +195,7 @@ def run_generation_task() -> CounterfactualsGenerator:
     bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
 
     optimizer = CombinedOptimizer(
-        starting_design_index=0,
+        starting_design_index='3728',
         design_targets=design_targets,
         target_embeddings=target_embeddings,
         extra_bonus_objectives=bonus_objectives
@@ -199,21 +203,17 @@ def run_generation_task() -> CounterfactualsGenerator:
 
     generator = optimizer.build_generator()
 
-    number_of_batches = 3
-    batch_size = 35
+    number_of_batches = 4
+    batch_size = 75
 
     run_id = 'full-scores-fit-bikes-' + str(uuid.uuid4().fields[-1])[:5]
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
-    with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
-        file.write(
-            f"Target embeddings: {target_embeddings}\n"
-            + f"batches: {number_of_batches}. Batch size: {batch_size}"
-        )
+    _save_metadata(batch_size, number_of_batches, run_dir, target_embeddings)
 
     for i in range(1, number_of_batches + 1):
         cumulative_gens = batch_size * i
-        generator.generate(n_generations=cumulative_gens)
+        generator.generate(n_generations=cumulative_gens, seed=23)
         sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
                                                 cfc_weight=1, diversity_weight=0.1)
         scores_array = _get_scores_array(generator, sampled)
@@ -227,6 +227,14 @@ def run_generation_task() -> CounterfactualsGenerator:
         assert len(sampled) == len(result), "concat failed"
         result.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
     return generator
+
+
+def _save_metadata(batch_size, number_of_batches, run_dir, target_embeddings):
+    with open(os.path.join(run_dir, 'metadata.txt'), 'w') as file:
+        file.write(
+            f"Target embeddings: {target_embeddings}\n"
+            + f"batches: {number_of_batches}. Batch size: {batch_size}"
+        )
 
 
 def _get_scores_array(generator, sampled):
