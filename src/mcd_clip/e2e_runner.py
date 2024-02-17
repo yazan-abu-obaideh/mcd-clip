@@ -8,14 +8,14 @@ from decode_mcd import CounterfactualsGenerator
 
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
+from mcd_clip.bike_rendering.parametric_to_image_convertor import RenderingResult
 from mcd_clip.optimization.embedding_similarity_optimizer import build_generator, to_full_dataframe, PREDICTOR
-from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor, RenderingResult
 from mcd_clip.resource_utils import run_result_path
+from mcd_clip.singletons import IMAGE_CONVERTOR
 
 SIMILARITY = 'cosine_similarity'
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
-IMAGE_CONVERTOR = ParametricToImageConvertor()
 
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:

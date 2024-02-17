@@ -41,11 +41,11 @@ def draw_figure():
     grid = sns.pairplot(original_data)
     for i in range(len(grid.axes)):
         for j in range(len(grid.axes[i])):
-            _draw_on_axis(original_data, grid.axes[i][j])
+            _draw_on_axis(grid.axes[i][j])
     grid.savefig(run_result_path('fig-lines.png'))
 
 
-def _draw_on_axis(original_data: pd.DataFrame, curr_axis):
+def _draw_on_axis(curr_axis):
     x_label = _get_x_label(curr_axis).get_text()
     y_label = _get_y_label(curr_axis).get_text()
     if x_label in design_targets.get_all_constrained_labels():

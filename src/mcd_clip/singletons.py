@@ -1,3 +1,5 @@
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
+IMAGE_CONVERTOR = ParametricToImageConvertor()
