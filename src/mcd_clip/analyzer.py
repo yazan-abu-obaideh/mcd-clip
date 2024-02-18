@@ -21,6 +21,9 @@ def _render_and_save(clips_data: pd.DataFrame, idx):
     rendering_result = IMAGE_CONVERTOR.to_image(clips_data.loc[idx])
     with open(run_result_path(f'bike_{idx}.svg'), 'wb') as file:
         file.write(rendering_result.image)
+    with open(run_result_path(f'bike_{idx}.txt'), 'w') as file:
+        file.write(rendering_result.bike_xml)
+
 
 
 def get_predictions():
@@ -57,14 +60,19 @@ def get_worst():
                    'embedding_distance_1', 'embedding_distance_2']:
         data['bad_score'] = data['bad_score'] + (data[column] / data[column].mean())
     ranked = data.sort_values(by='bad_score', ascending=False)
+    ranked = ranked[ranked['Sim 1 Safety Factor (Inverted)'] < 1.5]
 
-    for idx in ranked.index[:5]:
+    for idx in ranked.index[5:25]:
         print(idx)
         element = ranked.loc[idx]
         print(f"{element['Model Mass']=}")
         print(f"{element['Sim 1 Safety Factor (Inverted)']=}")
         print(f"{element['embedding_distance_1']=}")
         print(f"{element['embedding_distance_2']=}")
+        print(f"{element['ERD rear']=}")
+        print(f"{element['Wheel width rear']=}")
+        print(f"{element['SEATSTAYbrdgdia1']=}")
+        print(f"{element['CHAINSTAYbrdgdia1']=}")
 
     return ranked
 
@@ -76,4 +84,4 @@ def render_by_original_index(original_index: str):
 
 if __name__ == '__main__':
     get_worst()
-    render_by_original_index('3728')
+    render_by_original_index('1276')
