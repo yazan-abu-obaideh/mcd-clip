@@ -47,7 +47,6 @@ def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
             _map_framed_column(result, column)
         elif column in CLIPS_COLUMNS:
             mapped_datatype = map_column(dataframe[column])
-            print(f"Mapped {column} to {type(mapped_datatype)}")
             result.append(mapped_datatype)
         else:
             result.append(BIKE_FIT_DATATYPES[column])

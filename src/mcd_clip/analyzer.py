@@ -38,7 +38,6 @@ def get_predictions():
             AERODYNAMIC_DRAG_TARGET
         ])
     combined_optimizer = CombinedOptimizer(
-        starting_design_index=0,
         extra_bonus_objectives=[],
         design_targets=design_targets,
         target_embeddings=target_embeddings

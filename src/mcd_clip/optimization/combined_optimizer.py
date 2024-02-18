@@ -13,7 +13,6 @@ from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_T
     AERODYNAMIC_DRAG_TARGET
 from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
-from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
 from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
@@ -66,7 +65,6 @@ class ImageEmbeddingTarget(EmbeddingTarget):
 
 class CombinedOptimizer:
     def __init__(self,
-                 starting_design_index: str,
                  design_targets: DesignTargets,
                  target_embeddings: List[EmbeddingTarget],
                  extra_bonus_objectives: List[str]):
@@ -76,15 +74,34 @@ class CombinedOptimizer:
         self._structural_predictor = StructuralPredictor()
         self._extra_bonus_objectives = extra_bonus_objectives or []
         self._starting_dataset = self._build_starting_dataset()
-        self.starting_design = self._get_starting_design(starting_design_index)
-        self._log_starting_performance()
+        self.structural_enabled = ('Model Mass' in design_targets.get_all_constrained_labels() or
+                                   "Sim 1 Safety Factor (Inverted)" in design_targets.get_all_constrained_labels())
+        self.starting_design = None
+
+    def set_starting_design_by_index(self, design_index: str):
+        self.starting_design = self._get_starting_design(design_index)
+
+    def set_starting_design(self, design: pd.DataFrame):
+        self.starting_design = design
 
     def _log_starting_performance(self):
         predictions = self.predict(self.starting_design)
         for column in predictions.columns:
             print(f"Starting design has in column {column} value {predictions[column].values[0]}")
 
-    def build_generator(self) -> CounterfactualsGenerator:
+    def build_generator(self,
+                        gower_on: bool = True,
+                        average_gower_on: bool = True,
+                        changed_feature_on: bool = True,
+                        use_empty_repair: bool = False,
+                        validation_functions: List[Callable] = None) -> CounterfactualsGenerator:
+
+        if self.starting_design is None:
+            raise Exception("Must set starting design before building the generator")
+
+        self._log_starting_performance()
+        validation_functions = validation_functions or []
+        print(f"Number of validation functions is {len(validation_functions)}")
         data_package = DataPackage(
             features_dataset=self._starting_dataset.get_combined(),
             predictions_dataset=self.predict(self._starting_dataset),
@@ -97,13 +114,19 @@ class CombinedOptimizer:
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
                 pd.DataFrame(d, columns=self._starting_dataset.get_combined().columns))),
-            constraint_functions=COMBINED_VALIDATION_FUNCTIONS
+            constraint_functions=validation_functions
+        )
+        problem.set_desired_scores(
+            gower=gower_on,
+            average_gower=average_gower_on,
+            change_feature_ratio=changed_feature_on
         )
         generator = CounterfactualsGenerator(
             problem=problem,
             pop_size=100,
             initialize_from_dataset=True,
         )
+        generator.use_empty_repair(use_empty_repair)
         return generator
 
     def _build_starting_dataset(self) -> CombinedDataset:
@@ -114,12 +137,14 @@ class CombinedOptimizer:
                                                 bike_fit_style=original_dataset.get_as_bike_fit())
 
     def predict(self, designs: CombinedDataset) -> pd.DataFrame:
-        structural_predictions = self._predict_structural(designs)
-        embedding_predictions = self._predict_embedding_distances(designs)
-        result = pd.concat([structural_predictions, embedding_predictions], axis=1)
+        result = pd.DataFrame(index=designs.get_combined().index)
+        if self.structural_enabled:
+            self._predict_structural(result, designs)
+        self._predict_embedding_distances(result, designs)
         result = self._add_fit_measure(designs, result, calculate_drag)
         result = self._add_fit_measure(designs, result, calculate_angles)
         result = self._drop_irrelevant_columns(result)
+        assert len(result) == len(designs.get_combined()), "Concat failed!"
         self._log_progress(result)
         return result
 
@@ -127,22 +152,22 @@ class CombinedOptimizer:
         return list(
             self._design_targets.get_all_constrained_labels()) + self._extra_bonus_objectives + self.distance_columns()
 
-    def _predict_structural(self, designs: CombinedDataset) -> pd.DataFrame:
-        return self._structural_predictor.predict_unscaled(designs.get_as_framed(),
-                                                           self._x_scaler,
-                                                           self._y_scaler)
+    def _predict_structural(self, result: pd.DataFrame,
+                            designs: CombinedDataset) -> None:
+        structural_predictions = self._structural_predictor.predict_unscaled(designs.get_as_framed(), self._x_scaler,
+                                                                             self._y_scaler)
+        for c in structural_predictions.columns:
+            result[c] = structural_predictions[c]
 
     def _drop_irrelevant_columns(self, result: pd.DataFrame) -> pd.DataFrame:
         return result.drop(columns=[c for c in result.columns if c
                                     not in self._get_relevant_columns()])
 
-    def _predict_embedding_distances(self, designs: CombinedDataset) -> pd.DataFrame:
+    def _predict_embedding_distances(self, result: pd.DataFrame, designs: CombinedDataset) -> None:
         designs_clips = designs.get_as_clips()
-        embedding_predictions = pd.DataFrame(columns=self.distance_columns(), index=designs_clips.index)
         for idx in range(len(self._target_embeddings)):
             target = self._target_embeddings[idx].get_embedding()
-            embedding_predictions[distance_column_name(idx)] = predict_from_partial_dataframe(designs_clips, target)
-        return embedding_predictions
+            result[distance_column_name(idx)] = predict_from_partial_dataframe(designs_clips, target)
 
     def _add_fit_measure(self,
                          designs: CombinedDataset,
@@ -158,8 +183,8 @@ class CombinedOptimizer:
     def _log_progress(self, result: pd.DataFrame):
         for column in result.columns:
             result_column_ = result[column]
-            print(f"{column} | min {np.min(result_column_)}, max [{np.max(result_column_)}],"
-                  f"  average [{np.average(result_column_)}]")
+            print(f"{column} | min {round(np.min(result_column_), 2)}, max [{round(np.max(result_column_), 2)}],"
+                  f"  average [{round(np.average(result_column_), 2)}]")
 
     def _get_starting_design(self, design_index: str) -> CombinedDataset:
         return CombinedDataset(
@@ -195,11 +220,12 @@ def run_generation_task() -> CounterfactualsGenerator:
     bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
 
     optimizer = CombinedOptimizer(
-        starting_design_index='3728',
         design_targets=design_targets,
         target_embeddings=target_embeddings,
         extra_bonus_objectives=bonus_objectives
     )
+
+    optimizer.set_starting_design_by_index('3728')
 
     generator = optimizer.build_generator()
 
