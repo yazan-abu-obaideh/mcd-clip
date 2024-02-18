@@ -55,6 +55,16 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     average_image(images_paths, batch_dir)
 
 
+def get_validity(sampled: pd.DataFrame):
+    result = pd.DataFrame(index=sampled.index)
+    for i in range(len(COMBINED_VALIDATION_FUNCTIONS)):
+        validation_function = COMBINED_VALIDATION_FUNCTIONS[i]
+        validation_result = validation_function(sampled)
+        result[f"validation_result_{i}"] = validation_result
+    assert len(result) == len(sampled)
+    return result
+
+
 def run(ablation: bool):
     TEXT_TARGET = "A pink road bike with water bottles"
     GENERATIONS = 250
@@ -80,12 +90,13 @@ def run(ablation: bool):
     optimizer.set_starting_design_by_index('1')
     features_desired = not ablation
     empty_repair_desired = ablation
-    generator = optimizer.build_generator(validation_functions=[],
-                                          gower_on=features_desired,
-                                          average_gower_on=features_desired,
-                                          changed_feature_on=features_desired,
-                                          use_empty_repair=empty_repair_desired
-                                          )
+    generator = optimizer.build_generator(validation_functions=[
+    ],
+        gower_on=features_desired,
+        average_gower_on=features_desired,
+        changed_feature_on=features_desired,
+        use_empty_repair=empty_repair_desired
+    )
 
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
@@ -94,18 +105,17 @@ def run(ablation: bool):
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        if ablation:
-            score_weight = 0
-        else:
-            score_weight = 1
+        score_weight = 10
 
         sampled = generator.sample_with_weights(num_samples=100,
                                                 cfc_weight=score_weight,
                                                 gower_weight=score_weight,
                                                 avg_gower_weight=score_weight,
                                                 diversity_weight=0.1)
-        full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
+        validity = get_validity(sampled)
+        full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled)), validity], axis=1)
         assert len(full_df) == len(sampled)
+        full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
         render_some(full_df, run_dir, i)
 
 
