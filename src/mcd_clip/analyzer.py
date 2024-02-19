@@ -87,6 +87,6 @@ def render_by_original_index(original_index: str):
 
 
 if __name__ == '__main__':
-    get_predictions()
-    get_worst()
-    render_by_original_index('1548')
+    data = pd.read_csv(
+        '/home/yazan/Repositories/Personal/mcd-clip/src/mcd_clip/run-results/02-19--18.52.36-template-A futuristic black cyberpunk-style road racing bicycle/batch_4.csv')
+    render_from_combined_data(data.sample(3))

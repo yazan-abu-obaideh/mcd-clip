@@ -100,6 +100,7 @@ def _sample(
         generator: CounterfactualsGenerator, distance_column_index: int):
     as_many = generator.sample_with_weights(num_samples=1000, cfc_weight=1,
                                             gower_weight=1, avg_gower_weight=1,
+                                            bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
                                             diversity_weight=0.1, include_dataset=False)
     column_ = distance_column_name(distance_column_index)
     as_many[column_] = optimizer.predict(CombinedDataset(as_many))[column_]
