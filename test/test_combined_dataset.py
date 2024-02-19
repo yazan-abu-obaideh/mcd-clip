@@ -3,7 +3,8 @@ import unittest
 import numpy.testing as np_test
 
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, BIKE_FIT_COLUMNS, \
-    FRAMED_TO_CLIPS_UNITS, FRAMED_TO_CLIPS_IDENTICAL, UNIQUE_BIKE_FIT_COLUMNS
+    FRAMED_TO_CLIPS_UNITS, FRAMED_TO_CLIPS_IDENTICAL, UNIQUE_BIKE_FIT_COLUMNS, FRAMED_CLIPS_INTERSECTION_COLUMNS, \
+    ONE_HOT_ENCODED_CLIPS_COLUMNS, CLIPS_ONE_HOT_ENCODING_SEP
 from mcd_clip.datasets.combined_datasets import OriginalCombinedDataset
 
 
@@ -59,6 +60,13 @@ class CombinedDatasetTest(unittest.TestCase):
         self.assertEqual(list(self.framed.columns), FRAMED_COLUMNS)
         self.assertEqual(list(self.clips.columns), CLIPS_COLUMNS)
         self.assertEqual(list(self._bike_fit), BIKE_FIT_COLUMNS)
+
+        self.assertEqual(set(ONE_HOT_ENCODED_CLIPS_COLUMNS),
+                         set([str(column).split(CLIPS_ONE_HOT_ENCODING_SEP)[0]
+                              for column in self.clips.columns if 'OHCLASS' in column]))
+        self.assertEqual(set(FRAMED_CLIPS_INTERSECTION_COLUMNS),
+                         set(self.framed.columns).intersection(self.clips.columns)
+                         )
 
     def test_column_mapping_constants(self):
         for k, v in FRAMED_TO_CLIPS_UNITS.items():
