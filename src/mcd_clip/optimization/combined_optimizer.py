@@ -142,10 +142,19 @@ class CombinedOptimizer:
             self._predict_structural(result, designs)
         self._predict_embedding_distances(result, designs)
         result = self._add_fit_measure(designs, result, calculate_drag)
-        result = self._add_fit_measure(designs, result, calculate_angles)
+        result = self._add_ergonomic_score(designs, result)
         result = self._drop_irrelevant_columns(result)
         assert len(result) == len(designs.get_combined()), "Concat failed!"
         self._log_progress(result)
+        return result
+
+    def _add_ergonomic_score(self, designs, result):
+        result = self._add_fit_measure(designs, result, calculate_angles)
+        result['ergonomic_score'] = 0
+        for target in (KNEE_TARGET, BACK_TARGET, ARMPIT_WRIST_TARGET):
+            mean_angle = (target.upper_bound + target.lower_bound) / 2
+            distance_from_mean = np.abs(result[target.label] - mean_angle)
+            result['ergonomic_score'] += distance_from_mean
         return result
 
     def _get_relevant_columns(self) -> List[str]:
