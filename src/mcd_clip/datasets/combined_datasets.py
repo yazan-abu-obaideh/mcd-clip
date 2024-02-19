@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Callable
 
 import numpy as np
 import pandas as pd
@@ -230,24 +230,30 @@ class CombinedDataset:
 
     @classmethod
     def _reverse_framed_one_hot_encoding(cls, result: pd.DataFrame):
-        def column_finder(column_name: str): return 'Material' in column_name
-
-        columns_to_drop = [c for c in result.columns if column_finder(c)]
-        reversed_encoding = reverse_one_hot_encoding(result,
-                                                     column_finder=column_finder,
-                                                     separator='=')
-        result['Material'] = reversed_encoding.values
-        result.drop(columns=columns_to_drop, inplace=True)
+        cls._reverse_one_hot_encoding(
+            result,
+            lambda column_name: 'Material' in column_name,
+            separator='='
+        )
 
     @classmethod
     def _reverse_clips_one_hot_encoding(cls, result: pd.DataFrame):
-        def column_finder(column_name: str):
-            return 'OHCLASS' in column_name.upper()
+        cls._reverse_one_hot_encoding(
+            result,
+            column_finder=lambda column_name: 'OHCLASS' in column_name.upper(),
+            separator=CLIPS_ONE_HOT_ENCODING_SEP
+        )
 
+    @classmethod
+    def _reverse_one_hot_encoding(cls,
+                                  result: pd.DataFrame,
+                                  column_finder: Callable[[str], bool],
+                                  separator: str,
+                                  ):
         columns_to_drop = [c for c in result.columns if column_finder(c)]
         reversed_encoding = reverse_one_hot_encoding(result,
                                                      column_finder=column_finder,
-                                                     separator=CLIPS_ONE_HOT_ENCODING_SEP)
+                                                     separator=separator)
         for c in reversed_encoding.columns:
             result[c] = reversed_encoding[c].values
         result.drop(columns=columns_to_drop, inplace=True)
