@@ -28,11 +28,11 @@ TRIMMED_FEATURES = FEATURES.drop(columns=CONSTANT_COLUMNS)
 
 
 def predict_from_partial_dataframe(designs, target_embedding):
-    full_designs_df = to_full_dataframe(designs)
+    full_designs_df = to_full_clips_dataframe(designs)
     return get_cosine_distance(PREDICTOR.predict(full_designs_df), target_embedding)
 
 
-def to_full_dataframe(designs: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
+def to_full_clips_dataframe(designs: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
     designs_copy = pd.DataFrame(designs, columns=TRIMMED_FEATURES.columns)
     designs_copy = designs_copy.fillna(TRIMMED_FEATURES.mean())
     for column in CONSTANT_COLUMNS:

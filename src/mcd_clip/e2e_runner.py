@@ -9,7 +9,7 @@ from decode_mcd import CounterfactualsGenerator
 from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.bike_rendering.parametric_to_image_convertor import RenderingResult
-from mcd_clip.optimization.embedding_similarity_optimizer import build_generator, to_full_dataframe, PREDICTOR
+from mcd_clip.optimization.embedding_similarity_optimizer import build_generator, to_full_clips_dataframe, PREDICTOR
 from mcd_clip.resource_utils import run_result_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
@@ -35,7 +35,7 @@ def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:
 
 def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: str, batch_number: int,
                                target_embedding: np.ndarray):
-    counterfactuals = to_full_dataframe(_get_counterfactuals(generator))
+    counterfactuals = to_full_clips_dataframe(_get_counterfactuals(generator))
     batch_result_dir = _make_batch_dir(batch_number, result_dir)
     counterfactuals.to_csv(path_or_buf=os.path.join(batch_result_dir, "counterfactuals.csv"))
     closest_counterfactuals = _get_closest(counterfactuals, target_embedding)
