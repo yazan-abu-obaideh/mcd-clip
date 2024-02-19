@@ -26,14 +26,16 @@ UNIQUE_BIKE_FIT_COLUMNS = [
     'Headset spacers',
 ]
 
-FRAMED_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium',
-                  'SSB_Include', 'CSB_Include', 'CS Length', 'BB Drop', 'Stack', 'SS E',
-                  'ST Angle', 'BB OD', 'TT OD', 'HT OD', 'DT OD', 'CS OD', 'SS OD',
-                  'ST OD', 'CS F', 'HT LX', 'ST UX', 'HT UX', 'HT Angle', 'HT Length',
-                  'ST Length', 'BB Length', 'Dropout Offset', 'SSB OD', 'CSB OD',
-                  'SSB Offset', 'CSB Offset', 'SS Z', 'SS Thickness', 'CS Thickness',
-                  'TT Thickness', 'BB Thickness', 'HT Thickness', 'ST Thickness',
-                  'DT Thickness', 'DT Length']
+FRAMED_MATERIAL_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium']
+
+FRAMED_COLUMNS = (FRAMED_MATERIAL_COLUMNS +
+                  ['SSB_Include', 'CSB_Include', 'CS Length', 'BB Drop', 'Stack', 'SS E',
+                   'ST Angle', 'BB OD', 'TT OD', 'HT OD', 'DT OD', 'CS OD', 'SS OD',
+                   'ST OD', 'CS F', 'HT LX', 'ST UX', 'HT UX', 'HT Angle', 'HT Length',
+                   'ST Length', 'BB Length', 'Dropout Offset', 'SSB OD', 'CSB OD',
+                   'SSB Offset', 'CSB Offset', 'SS Z', 'SS Thickness', 'CS Thickness',
+                   'TT Thickness', 'BB Thickness', 'HT Thickness', 'ST Thickness',
+                   'DT Thickness', 'DT Length'])
 
 FRAMED_CLIPS_INTERSECTION_COLUMNS = ['DT Length', 'Stack']
 

@@ -2,7 +2,7 @@ from typing import List
 
 import numpy as np
 import pandas as pd
-from pymoo.core.variable import Variable, Choice, Real, Integer
+from pymoo.core.variable import Variable, Choice, Real
 
 from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
@@ -52,7 +52,7 @@ def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
     for column in dataframe.columns:
         if _is_categorical(column):
             options = tuple(dataframe[column].unique())
-            print(f"Mapping column to choice with options {options}")
+            print(f"Mapping {column} to choice with options {options}")
             result.append(Choice(options=options))
         elif column in FRAMED_COLUMNS:
             _map_framed_column(result, column)
@@ -121,13 +121,12 @@ class CombinedDataset:
     def _to_clips_material(self, data: pd.DataFrame):
         for material in CLIPS_IGNORED_MATERIAL:
             data[material] = 0
-        framed_materials = self._get_framed_material_columns()
-        framed_material_columns = framed_materials.columns
+        framed_material_columns = self._get_framed_material_columns()
         print(f"Found framed material columns {framed_material_columns}")
         for material_column in framed_material_columns:
             clips_column = self._to_clips_material_column(material_column)
-            data[clips_column] = data[material_column]
-        data.drop(columns=framed_material_columns, inplace=True)
+            data[clips_column] = data.get(material_column, 0)
+        data.drop(columns=framed_material_columns, inplace=True, errors='ignore')
         self._handle_aluminum(data)
 
     def _to_clips_material_column(self, material_column: str) -> str:
@@ -222,15 +221,12 @@ class CombinedDataset:
 
     def _append_framed_material(self, result: pd.DataFrame) -> None:
         encoded_columns = get_encoded_columns(result, column_name='Material', prefix_sep='=')
-        for c in encoded_columns:
-            result[c] = encoded_columns[c]
+        for c in encoded_columns.columns:
+            result[c] = encoded_columns[c].values
         result.drop(columns=['Material'], inplace=True)
 
     def _get_framed_material_columns(self):
-        data = self._data.copy()
-        data["Material"] = pd.Categorical(data["Material"], categories=["Steel", "Aluminum", "Titanium"])
-        mats_oh = pd.get_dummies(data["Material"], prefix="Material=", prefix_sep="")
-        return mats_oh
+        return FRAMED_MATERIAL_COLUMNS
 
     @classmethod
     def _reverse_framed_one_hot_encoding(cls, result: pd.DataFrame):
