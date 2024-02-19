@@ -55,7 +55,7 @@ cycler==0.12.1
 cymem==2.0.8
 datasets==2.16.1
 debugpy==1.8.1
-decode-mcd==2024.2.17
+decode-mcd==2024.2.19
 decorator==5.1.1
 defusedxml==0.7.1
 Deprecated==1.2.14
