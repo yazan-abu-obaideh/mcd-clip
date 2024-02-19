@@ -4,18 +4,12 @@ import pandas as pd
 from mcd_clip.bike_rendering.bikeCad_renderer import RenderingService
 from mcd_clip.bike_rendering.bike_xml_handler import BikeXmlHandler
 from mcd_clip.bike_rendering.clips_to_bcad import clips_to_cad
+from mcd_clip.datasets.columns_constants import ONE_HOT_ENCODED_CLIPS_COLUMNS
 from mcd_clip.resource_utils import resource_path
 
 RENDERING_SERVICE = RenderingService(1)
 
 STANDARD_BIKE_RESOURCE = "PlainRoadBikeStandardized.txt"
-
-ONE_HOT_ENCODED_VALUES = ['MATERIAL', 'Dropout spacing style',
-                          'Head tube type', 'BELTorCHAIN',
-                          'bottle SEATTUBE0 show', 'RIM_STYLE front',
-                          'RIM_STYLE rear', 'Handlebar style',
-                          'bottle DOWNTUBE0 show', 'Stem kind',
-                          'Fork type', 'Top tube type']
 
 
 @attrs.define
@@ -81,7 +75,7 @@ class ParametricToImageConvertor:
     def _remove_encoded_values(self, bike_dict: dict) -> dict:
         to_delete = []
         for k, _ in bike_dict.items():
-            for encoded_key in ONE_HOT_ENCODED_VALUES:
+            for encoded_key in ONE_HOT_ENCODED_CLIPS_COLUMNS:
                 if "OHCLASS" in k and encoded_key in k:
                     print(f"Deleting key {k}")
                     to_delete.append(k)
@@ -92,7 +86,7 @@ class ParametricToImageConvertor:
 
 def one_hot_decode(bike: pd.Series) -> dict:
     result = {}
-    for encoded_value in ONE_HOT_ENCODED_VALUES:
+    for encoded_value in ONE_HOT_ENCODED_CLIPS_COLUMNS:
         for column in bike.index:
             if encoded_value in column and bike[column] == 1:
                 result[encoded_value] = column.split('OHCLASS:')[1].strip()

@@ -58,8 +58,8 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance
 
 def run():
     TEXT_TARGET = "A futuristic black cyberpunk-style road racing bicycle"
-    GENERATIONS = 800
-    BATCH_SIZE = 200
+    GENERATIONS = 400
+    BATCH_SIZE = 100
     BATCHES = GENERATIONS // BATCH_SIZE
 
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + "-template-" + TEXT_TARGET

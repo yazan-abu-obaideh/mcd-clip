@@ -4,11 +4,15 @@ import numpy as np
 import pandas as pd
 from pymoo.core.variable import Variable, Choice, Real, Integer
 
-from mcd_clip.structural.load_data import load_augmented_framed_dataset
 from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
-    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, BIKE_FIT_COLUMNS, UNIQUE_BIKE_FIT_COLUMNS
+    FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, BIKE_FIT_COLUMNS, UNIQUE_BIKE_FIT_COLUMNS, \
+    FRAMED_CLIPS_INTERSECTION_COLUMNS, ONE_HOT_ENCODED_CLIPS_COLUMNS
+from mcd_clip.datasets.one_hot_encoding_util import reverse_one_hot_encoding, get_encoded_columns
 from mcd_clip.resource_utils import resource_path
+from mcd_clip.structural.load_data import load_augmented_framed_dataset
+
+CLIPS_ONE_HOT_ENCODING_SEP = ' OHCLASS: '
 
 BIKE_FIT_DATATYPES = {
     "Stem length": Real(bounds=(25.45, 140.0)),
@@ -17,6 +21,8 @@ BIKE_FIT_DATATYPES = {
     "Headset spacers": Real(bounds=(0.0, 50.0)),
     "Handlebar style": Integer(bounds=(1, 2))
 }
+
+FRAMED_MATERIAL_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium']
 
 
 def unscaled_framed_dataset():
@@ -74,6 +80,8 @@ class CombinedDataset:
         cls._drop_clips_identical(result)
         cls._drop_clips_millimeter_columns(result)
         cls._replace_intersection(framed=framed, result=result)
+        cls._reverse_framed_one_hot_encoding(result)
+        cls._reverse_clips_one_hot_encoding(result)
         cls._append_bike_fit(result, bike_fit_style)
         return CombinedDataset(result)
 
@@ -81,8 +89,9 @@ class CombinedDataset:
         return self._data.copy(deep=True)
 
     def get_as_framed(self) -> pd.DataFrame:
-        dropped = self._data.drop(columns=[c for c in self._data.columns if c not in FRAMED_COLUMNS])
-        return pd.DataFrame(dropped, columns=FRAMED_COLUMNS)
+        result = self._data.copy(deep=True)
+        self._append_framed_material(result)
+        return pd.DataFrame(result, columns=FRAMED_COLUMNS)
 
     def get_as_bike_fit(self) -> pd.DataFrame:
         result = self._get_bike_fit_from_clips()
@@ -97,7 +106,9 @@ class CombinedDataset:
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)
+        self._append_framed_material(data)
         self._to_clips_material(data)
+        self._append_clips_one_hot_encoded(data)
         self._to_millimeter_columns(data)
         self._to_clips_identical(data)
         return pd.DataFrame(data, columns=CLIPS_COLUMNS)
@@ -105,7 +116,8 @@ class CombinedDataset:
     def _to_clips_material(self, data: pd.DataFrame):
         for material in CLIPS_IGNORED_MATERIAL:
             data[material] = 0
-        framed_material_columns = [c for c in data.columns if 'Material' in c]
+        framed_materials = self._get_framed_material_columns()
+        framed_material_columns = framed_materials.columns
         print(f"Found framed material columns {framed_material_columns}")
         for material_column in framed_material_columns:
             clips_column = self._to_clips_material_column(material_column)
@@ -136,7 +148,7 @@ class CombinedDataset:
 
     @staticmethod
     def get_intersection_columns():
-        return ['DT Length', 'Stack']
+        return FRAMED_CLIPS_INTERSECTION_COLUMNS
 
     @staticmethod
     def _drop_clips_identical(dataframe: pd.DataFrame):
@@ -192,6 +204,60 @@ class CombinedDataset:
         for column in UNIQUE_BIKE_FIT_COLUMNS:
             if column in bike_fit_style.columns:
                 result[column] = bike_fit_style[column]
+
+    @classmethod
+    def _map_framed_material(cls, result: pd.DataFrame):
+
+        def extract_material(row: pd.Series):
+            for c in FRAMED_MATERIAL_COLUMNS:
+                if int(row.loc[c]) == 1:
+                    return c.split('=')[1]
+
+        result['Material'] = result.apply(func=extract_material, axis=1)
+
+    def _append_framed_material(self, result: pd.DataFrame) -> None:
+        encoded_columns = get_encoded_columns(result, column_name='Material', prefix_sep='=')
+        for c in encoded_columns:
+            result[c] = encoded_columns[c]
+        result.drop(columns=['Material'], inplace=True)
+
+    def _get_framed_material_columns(self):
+        data = self._data.copy()
+        data["Material"] = pd.Categorical(data["Material"], categories=["Steel", "Aluminum", "Titanium"])
+        mats_oh = pd.get_dummies(data["Material"], prefix="Material=", prefix_sep="")
+        return mats_oh
+
+    @classmethod
+    def _reverse_framed_one_hot_encoding(cls, result: pd.DataFrame):
+        def column_finder(column_name: str): return 'Material' in column_name
+
+        columns_to_drop = [c for c in result.columns if column_finder(c)]
+        reversed_encoding = reverse_one_hot_encoding(result,
+                                                     column_finder=column_finder,
+                                                     separator='=')
+        result['Material'] = reversed_encoding.values
+        result.drop(columns=columns_to_drop, inplace=True)
+
+    @classmethod
+    def _reverse_clips_one_hot_encoding(cls, result: pd.DataFrame):
+        def column_finder(column_name: str):
+            return 'OHCLASS' in column_name.upper()
+
+        columns_to_drop = [c for c in result.columns if column_finder(c)]
+        reversed_encoding = reverse_one_hot_encoding(result,
+                                                     column_finder=column_finder,
+                                                     separator=CLIPS_ONE_HOT_ENCODING_SEP)
+        for c in reversed_encoding.columns:
+            result[c] = reversed_encoding[c].values
+        result.drop(columns=columns_to_drop, inplace=True)
+
+    def _append_clips_one_hot_encoded(self, data: pd.DataFrame):
+        relevant_clips_columns = [c for c in ONE_HOT_ENCODED_CLIPS_COLUMNS if 'material' != c.lower()]
+        for column in relevant_clips_columns:
+            encoded_dataframe = get_encoded_columns(data, column_name=column, prefix_sep=CLIPS_ONE_HOT_ENCODING_SEP)
+            for encoded_column in encoded_dataframe.columns:
+                data[encoded_column] = encoded_dataframe[encoded_column]
+            data.drop(columns=[column], inplace=True)
 
 
 class OriginalCombinedDataset:

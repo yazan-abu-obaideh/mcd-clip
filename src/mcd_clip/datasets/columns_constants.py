@@ -35,6 +35,15 @@ FRAMED_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium',
                   'TT Thickness', 'BB Thickness', 'HT Thickness', 'ST Thickness',
                   'DT Thickness', 'DT Length']
 
+FRAMED_CLIPS_INTERSECTION_COLUMNS = ['DT Length', 'Stack']
+
+ONE_HOT_ENCODED_CLIPS_COLUMNS = ['MATERIAL', 'Dropout spacing style',
+                                 'Head tube type', 'BELTorCHAIN',
+                                 'bottle SEATTUBE0 show', 'RIM_STYLE front',
+                                 'RIM_STYLE rear', 'Handlebar style',
+                                 'bottle DOWNTUBE0 show', 'Stem kind',
+                                 'Fork type', 'Top tube type']
+
 CLIPS_COLUMNS = ['CS textfield', 'BB textfield', 'Stack', 'Head angle',
                  'Head tube length textfield', 'Seat stay junction0', 'Seat tube length',
                  'Seat angle', 'DT Length', 'BB diameter', 'ttd', 'dtd', 'csd', 'ssd',

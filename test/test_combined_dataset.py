@@ -22,25 +22,22 @@ class CombinedDatasetTest(unittest.TestCase):
             number_intersection_rows,
         )
 
-    @unittest.skip
     def test_clips_preservation(self):
         combined_as_clips = self.original_combined.get_as_clips()
         clips = self.clips.loc[combined_as_clips.index]
         self.assertEqual(len(clips), len(combined_as_clips))
         self.assertEqual(len(combined_as_clips), 4046)
-        relevant_clips_identical = [c for c in FRAMED_TO_CLIPS_IDENTICAL.values() if 'material' not in c.lower()]
-        relevant_clips_units = [c for c in FRAMED_TO_CLIPS_UNITS.values() if 'material' not in c.lower()]
-        for clips_column in relevant_clips_identical:
-            np_test.assert_allclose(
+        relevant_clips_columns = [c for c in CLIPS_COLUMNS if
+                                  ('material' not in c.lower()
+                                   and c not in FRAMED_TO_CLIPS_UNITS.values()
+                                   and c not in FRAMED_TO_CLIPS_IDENTICAL.values()
+                                   )
+                                  ]
+        self.assertEqual(len(relevant_clips_columns), 64)
+        for clips_column in relevant_clips_columns:
+            np_test.assert_array_equal(
                 combined_as_clips[clips_column],
                 clips[clips_column],
-                rtol=1e-05
-            )
-        for clips_column in relevant_clips_units:
-            np_test.assert_allclose(
-                combined_as_clips[clips_column],
-                clips[clips_column],
-                rtol=1e-04
             )
 
     def test_bike_fit_preservation(self):
@@ -81,15 +78,21 @@ class CombinedDatasetTest(unittest.TestCase):
         self.assertEqual(len(self._bike_fit), 4046)
 
     def test_framed_preserved(self):
-        combined = self.original_combined.get_combined()
+        combined = self.original_combined.get_as_framed()
         framed = self.framed.loc[combined.index]
         self.assertEqual(len(framed), len(combined))
         self.assertEqual(len(combined), 4046)
         for c in FRAMED_COLUMNS:
-            np_test.assert_array_equal(
-                combined[c].values,
-                framed[c].values
-            )
+            if 'Material' in c:
+                np_test.assert_array_equal(
+                    combined[c].values.astype('int32'),
+                    framed[c].values.astype('int32')
+                )
+            else:
+                np_test.assert_array_equal(
+                    combined[c].values,
+                    framed[c].values
+                )
 
     def assertOneToOne(self, any_map: dict):
         self.assertEqual(len(any_map.keys()), len(set(any_map.values())))

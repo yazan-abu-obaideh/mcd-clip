@@ -14,7 +14,7 @@ from mcd_clip.resource_utils import resource_path
 ALL_STRUCTURAL_DATASET = resource_path('all_structural_data_aug.csv')
 
 
-def one_hot_encode_material(data):
+def one_hot_encode_material(data: pd.DataFrame):
     data = data.copy()
     # One-hot encode the materials
     data["Material"] = pd.Categorical(data["Material"], categories=["Steel", "Aluminum", "Titanium"])
