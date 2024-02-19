@@ -242,10 +242,9 @@ def run_generation_task() -> CounterfactualsGenerator:
         generator.generate(n_generations=cumulative_gens, seed=23)
         sampled = generator.sample_with_weights(num_samples=1000, avg_gower_weight=1, gower_weight=1,
                                                 cfc_weight=1, diversity_weight=0.1)
-        scores_array = _get_scores_array(generator, sampled)
         result = pd.concat(
             [sampled,
-             _to_scores_dataframe(scores_array),
+             get_scores_dataframe(generator, sampled),
              optimizer.predict(CombinedDataset(sampled))
              ],
             axis=1
@@ -253,6 +252,10 @@ def run_generation_task() -> CounterfactualsGenerator:
         assert len(sampled) == len(result), "concat failed"
         result.to_csv(os.path.join(run_dir, f'batch_{i}_cfs.csv'))
     return generator
+
+
+def get_scores_dataframe(generator: CounterfactualsGenerator, sampled: pd.DataFrame):
+    return _to_scores_dataframe(_get_scores_array(generator, sampled))
 
 
 def _save_metadata(batch_size, number_of_batches, run_dir, target_embeddings):
@@ -263,7 +266,7 @@ def _save_metadata(batch_size, number_of_batches, run_dir, target_embeddings):
         )
 
 
-def _get_scores_array(generator, sampled):
+def _get_scores_array(generator: CounterfactualsGenerator, sampled: pd.DataFrame):
     result_dict = {}
     generator._problem._evaluate(sampled.values, result_dict)
     return result_dict['F']

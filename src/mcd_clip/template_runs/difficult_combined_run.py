@@ -1,22 +1,31 @@
 import io
 import os
+import random
 from datetime import datetime
 
 import cairosvg
 import numpy as np
 import pandas as pd
 from PIL import Image
-from decode_mcd import DesignTargets, ContinuousTarget
+from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
 
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance_column_name, TextEmbeddingTarget, \
-    ImageEmbeddingTarget
+    ImageEmbeddingTarget, get_scores_dataframe
 from mcd_clip.resource_utils import run_result_path, resource_path
-from mcd_clip.result_plots.draw_pair_plots import lyle_plot, draw_figure
+from mcd_clip.result_plots.draw_pair_plots import lyle_plot
 from mcd_clip.singletons import IMAGE_CONVERTOR
+
+
+def _generate_with_retry(cumulative, generator, seed=23):
+    try:
+        generator.generate(cumulative, seed=seed)
+    except AssertionError as e:
+        print(f"MCD failed while generating {e}, changing seed...")
+        _generate_with_retry(cumulative, generator, seed=random.randint(1, 50))
 
 
 def average_image(images_paths, batch_dir: str):
@@ -58,9 +67,29 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     average_image(images_paths, batch_dir)
 
 
+def _build_full_df(generator: CounterfactualsGenerator,
+                   optimizer: CombinedOptimizer,
+                   starting_design: pd.DataFrame):
+    sampled = generator.sample_with_weights(num_samples=1000,
+                                            cfc_weight=1,
+                                            gower_weight=1,
+                                            avg_gower_weight=1,
+                                            diversity_weight=0.1)
+    with_query = pd.concat([sampled, starting_design], axis=0)
+    full_df = pd.concat(
+        [with_query,
+         optimizer.predict(CombinedDataset(with_query)),
+         get_scores_dataframe(generator, with_query)
+         ],
+        axis=1
+    )
+    assert len(full_df) == len(sampled) + 1
+    return full_df
+
+
 def run():
     GENERATIONS = 320
-    BATCH_SIZE = 80
+    BATCH_SIZE = 20
     BATCHES = GENERATIONS // BATCH_SIZE
 
     target_embeddings = [
@@ -92,24 +121,15 @@ def run():
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
 
-    starting_design_with_performance = pd.concat(
-        [optimizer.starting_design.get_combined(), optimizer.predict(optimizer.starting_design)],
-        axis=1)
-    starting_design_with_performance.index = ['query']
+    starting_design = optimizer.starting_design.get_combined()
+    starting_design.index = ['query']
 
     for i in range(1, BATCHES + 1):
         cumulative = i * BATCH_SIZE
-        generator.generate(cumulative, seed=23)
-        sampled = generator.sample_with_weights(num_samples=1000, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
-                                                diversity_weight=0.1)
-        without_query = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
-        full_df = pd.concat([without_query, starting_design_with_performance], axis=0)
-        assert len(without_query) == len(sampled)
-        assert len(full_df) == len(sampled) + 1
-        full_df.to_csv(f'batch_{i}.csv')
-        draw_figure(full_df,
-                    selected_columns=design_targets.get_all_constrained_labels(),
-                    save_path=os.path.join(run_dir, f'batch_{i}_pairs.png'))
+        _generate_with_retry(cumulative, generator)
+        full_df = _build_full_df(generator, optimizer, starting_design)
+        full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
+        lyle_plot(full_df, generator, os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
         render_some(full_df, run_dir, i)
 
 

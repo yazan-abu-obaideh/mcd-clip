@@ -18,41 +18,45 @@ class CombinedDatasetTest(unittest.TestCase):
     def test_intersection_rows(self):
         number_intersection_rows = len(self.original_combined.get_combined())
         self.assertEqual(
-            3441,
+            4046,
             number_intersection_rows,
         )
 
     @unittest.skip
     def test_clips_preservation(self):
-        pass
+        combined_as_clips = self.original_combined.get_as_clips()
+        clips = self.clips.loc[combined_as_clips.index]
+        self.assertEqual(len(clips), len(combined_as_clips))
+        self.assertEqual(len(combined_as_clips), 4046)
+        relevant_clips_identical = [c for c in FRAMED_TO_CLIPS_IDENTICAL.values() if 'material' not in c.lower()]
+        relevant_clips_units = [c for c in FRAMED_TO_CLIPS_UNITS.values() if 'material' not in c.lower()]
+        for clips_column in relevant_clips_identical:
+            np_test.assert_allclose(
+                combined_as_clips[clips_column],
+                clips[clips_column],
+                rtol=1e-05
+            )
+        for clips_column in relevant_clips_units:
+            np_test.assert_allclose(
+                combined_as_clips[clips_column],
+                clips[clips_column],
+                rtol=1e-04
+            )
 
-    @unittest.skip
     def test_bike_fit_preservation(self):
         combined_as_fit = self.original_combined.get_as_bike_fit()
         bike_fit = self._bike_fit.loc[combined_as_fit.index]
         self.assertEqual(len(bike_fit), len(combined_as_fit))
-        self.assertEqual(len(combined_as_fit), 3441)
+        self.assertEqual(len(combined_as_fit), 4046)
+        np_test.assert_allclose(
+            bike_fit, combined_as_fit,
+            rtol=1e-05
+        )
         for c in UNIQUE_BIKE_FIT_COLUMNS:
             np_test.assert_array_equal(
                 combined_as_fit[c].values,
                 bike_fit[c].values
             )
-
-        for c in BIKE_FIT_COLUMNS:
-            if c in FRAMED_TO_CLIPS_IDENTICAL.values():
-                print(f"Testing identical column {c}...")
-                np_test.assert_array_equal(
-                    combined_as_fit[c].values,
-                    bike_fit[c].values,
-                )
-
-        for c in BIKE_FIT_COLUMNS:
-            if c in FRAMED_TO_CLIPS_UNITS.values():
-                print(f"Testing unit column {c}...")
-                np_test.assert_array_equal(
-                    combined_as_fit[c].values,
-                    bike_fit[c].values,
-                )
 
     def test_column_constants(self):
         self.assertEqual(list(self.framed.columns), FRAMED_COLUMNS)
@@ -80,7 +84,7 @@ class CombinedDatasetTest(unittest.TestCase):
         combined = self.original_combined.get_combined()
         framed = self.framed.loc[combined.index]
         self.assertEqual(len(framed), len(combined))
-        self.assertEqual(len(combined), 3441)
+        self.assertEqual(len(combined), 4046)
         for c in FRAMED_COLUMNS:
             np_test.assert_array_equal(
                 combined[c].values,

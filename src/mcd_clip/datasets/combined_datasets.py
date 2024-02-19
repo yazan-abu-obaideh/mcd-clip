@@ -221,6 +221,8 @@ class OriginalCombinedDataset:
         return self._combined
 
     def _get_bike_fit_corrected_index(self):
-        bike_fit = pd.read_csv(resource_path('bike_vector_df_with_id.csv'), index_col=0).drop(columns=['Bike ID'])
+        bike_fit = (pd.read_csv(resource_path('bike_vector_df_with_id.csv'),
+                                index_col='Bike ID')
+                    .drop(columns=['Unnamed: 0']))
         bike_fit.index = [str(idx) for idx in bike_fit.index]
         return bike_fit

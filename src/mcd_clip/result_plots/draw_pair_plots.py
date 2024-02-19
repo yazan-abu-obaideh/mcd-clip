@@ -67,7 +67,9 @@ def regular_plot():
     pass
 
 
-def lyle_plot(counterfactuals: pd.DataFrame, generator: CounterfactualsGenerator):
+def lyle_plot(counterfactuals: pd.DataFrame,
+              generator: CounterfactualsGenerator,
+              save_path: str):
     # replace with get_predictions
     column_names = generator._problem._data_package.predictions_dataset.columns
     obj_scores = pd.DataFrame(counterfactuals, columns=column_names)
@@ -89,7 +91,7 @@ def lyle_plot(counterfactuals: pd.DataFrame, generator: CounterfactualsGenerator
     # seaborn pairplot of validity
     palette = ["#3291a8", "#000000"]
     markers = [".", "X"]
-    s = [20] * (len(scores) - 1) + [100]
+    s = 20
     grid = sns.pairplot(scores, hue="class", kind="scatter", diag_kind="kde", palette=palette, markers=markers,
                         plot_kws={"s": s}, diag_kws={"cut": 0})
     proxy = [patches.Patch(color='gray', alpha=0.5, label='Shaded Region')]
@@ -159,4 +161,4 @@ def lyle_plot(counterfactuals: pd.DataFrame, generator: CounterfactualsGenerator
     # Create replacement
     grid.fig.legend(handles, labels, loc='upper right', title='Legend')
 
-    grid.savefig(run_result_path('lyle-fig.png'))
+    grid.savefig(save_path)
