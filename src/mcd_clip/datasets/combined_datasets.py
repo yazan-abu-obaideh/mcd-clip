@@ -1,3 +1,4 @@
+import random
 from typing import List, Callable
 
 import numpy as np
@@ -64,6 +65,14 @@ def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
             result.append(BIKE_FIT_DATATYPES[column])
             print(f"Mapped bike fit column {column}")
     return result
+
+
+def _get_or_default(row_value: str, category_map: dict):
+    try:
+        return category_map[row_value]
+    except KeyError:
+        print(f"Failed to get value from {category_map} by {row_value}. Defaulting to random.")
+        return random.choice(list(category_map.values()))
 
 
 class CombinedDataset:
@@ -290,7 +299,7 @@ class CombinedDataset:
         for column in result.columns:
             if column in CATEGORY_MAPS.keys():
                 to_category_map = (CATEGORY_MAPS[column])
-                result[column] = result[column].apply(lambda row_value: to_category_map[row_value])
+                result[column] = result[column].apply(lambda row_value: _get_or_default(row_value, to_category_map))
 
 
 class OriginalCombinedDataset:

@@ -5,7 +5,7 @@ import numpy.testing as np_test
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, BIKE_FIT_COLUMNS, \
     FRAMED_TO_CLIPS_UNITS, FRAMED_TO_CLIPS_IDENTICAL, UNIQUE_BIKE_FIT_COLUMNS, FRAMED_CLIPS_INTERSECTION_COLUMNS, \
     ONE_HOT_ENCODED_CLIPS_COLUMNS, CLIPS_ONE_HOT_ENCODING_SEP
-from mcd_clip.datasets.combined_datasets import OriginalCombinedDataset
+from mcd_clip.datasets.combined_datasets import OriginalCombinedDataset, CombinedDataset
 
 
 class CombinedDatasetTest(unittest.TestCase):
@@ -15,6 +15,21 @@ class CombinedDatasetTest(unittest.TestCase):
         self.clips = original_combined_dataset._get_clips_corrected_index()
         self.framed = original_combined_dataset._get_framed_unscaled()
         self._bike_fit = original_combined_dataset._get_bike_fit_corrected_index()
+
+    def test_constructor(self):
+        dataset = CombinedDataset(self.original_combined.get_combined())
+        np_test.assert_array_equal(
+            dataset.get_as_framed(),
+            self.original_combined.get_as_framed()
+        )
+        np_test.assert_array_equal(
+            dataset.get_as_clips(),
+            self.original_combined.get_as_clips()
+        )
+        np_test.assert_array_equal(
+            dataset.get_as_bike_fit(),
+            self.original_combined.get_as_bike_fit()
+        )
 
     def test_intersection_rows(self):
         number_intersection_rows = len(self.original_combined.get_combined())

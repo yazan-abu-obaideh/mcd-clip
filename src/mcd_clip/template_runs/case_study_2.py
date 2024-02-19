@@ -2,7 +2,6 @@ import io
 import os
 import random
 from datetime import datetime
-from typing import List
 
 import cairosvg
 import numpy as np
@@ -79,6 +78,7 @@ def run():
     )
     optimizer.set_starting_design_by_index('1')
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS)
+    generator.use_empty_repair(False)
 
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
@@ -91,16 +91,19 @@ def run():
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        render_some(_sample(generator, [0, 10]), run_dir, i, 0)
-        render_some(_sample(generator, [10, 0]), run_dir, i, 1)
+        render_some(_sample(optimizer, generator, 0), run_dir, i, 0)
+        render_some(_sample(optimizer, generator, 1), run_dir, i, 1)
 
 
-def _sample(generator: CounterfactualsGenerator,
-            bonus_objective_weights: List[int]):
-    return generator.sample_with_weights(num_samples=4, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
-                                         diversity_weight=0,
-                                         bonus_objectives_weights=np.array(bonus_objective_weights).reshape((1, 2)),
-                                         include_dataset=False)
+def _sample(
+        optimizer: CombinedOptimizer,
+        generator: CounterfactualsGenerator, distance_column_index: int):
+    as_many = generator.sample_with_weights(num_samples=1000, cfc_weight=1,
+                                            gower_weight=1, avg_gower_weight=1,
+                                            diversity_weight=0.1, include_dataset=False)
+    column_ = distance_column_name(distance_column_index)
+    as_many[column_] = optimizer.predict(CombinedDataset(as_many))[column_]
+    return as_many.sort_values(by=column_, ascending=True)[:5]
 
 
 def _generate_with_retry(cumulative: int, generator: CounterfactualsGenerator, seed: int = 23):

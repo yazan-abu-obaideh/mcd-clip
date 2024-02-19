@@ -93,7 +93,7 @@ def _build_full_df(generator: CounterfactualsGenerator,
 
 def run():
     GENERATIONS = 320
-    BATCH_SIZE = 20
+    BATCH_SIZE = 80
     BATCHES = GENERATIONS // BATCH_SIZE
 
     target_embeddings = [
