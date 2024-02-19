@@ -76,10 +76,14 @@ def _build_full_df(generator: CounterfactualsGenerator,
                                             avg_gower_weight=1,
                                             diversity_weight=0.1)
     with_query = pd.concat([sampled, starting_design], axis=0)
+    scores_df = get_scores_dataframe(generator, with_query)
+    scores_df.index = with_query.index
+    predictions = optimizer.predict(CombinedDataset(with_query))
+    predictions.index = with_query.index
     full_df = pd.concat(
         [with_query,
-         optimizer.predict(CombinedDataset(with_query)),
-         get_scores_dataframe(generator, with_query)
+         predictions,
+         scores_df
          ],
         axis=1
     )
@@ -115,7 +119,7 @@ def run():
         target_embeddings=target_embeddings,
         extra_bonus_objectives=bonus_objectives
     )
-    optimizer.set_starting_design_by_index('1276')
+    optimizer.set_starting_design_by_index('1548')
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS)
 
     run_dir = run_result_path(run_id)

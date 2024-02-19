@@ -25,7 +25,6 @@ def _render_and_save(clips_data: pd.DataFrame, idx):
         file.write(rendering_result.bike_xml)
 
 
-
 def get_predictions():
     target_embeddings = [
         TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
@@ -61,6 +60,8 @@ def get_worst():
         data['bad_score'] = data['bad_score'] + (data[column] / data[column].mean())
     ranked = data.sort_values(by='bad_score', ascending=False)
     ranked = ranked[ranked['Sim 1 Safety Factor (Inverted)'] < 1.5]
+    ranked = ranked[ranked['Aerodynamic Drag'] != float('inf')]
+    ranked = ranked[ranked['Model Mass'] < 10]
 
     for idx in ranked.index[5:25]:
         print(idx)
@@ -86,5 +87,6 @@ def render_by_original_index(original_index: str):
 
 
 if __name__ == '__main__':
+    get_predictions()
     get_worst()
-    render_by_original_index('1276')
+    render_by_original_index('1548')

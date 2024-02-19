@@ -154,8 +154,8 @@ class CombinedOptimizer:
 
     def _predict_structural(self, result: pd.DataFrame,
                             designs: CombinedDataset) -> None:
-        structural_predictions = self._structural_predictor.predict_unscaled(designs.get_as_framed(), self._x_scaler,
-                                                                             self._y_scaler)
+        structural_predictions = self._structural_predictor.predict_unscaled(
+            designs.get_as_framed(), self._x_scaler, self._y_scaler)
         for c in structural_predictions.columns:
             result[c] = structural_predictions[c]
 
@@ -171,11 +171,11 @@ class CombinedOptimizer:
 
     def _add_fit_measure(self,
                          designs: CombinedDataset,
-                         result: pd.DataFrame,
+                         older_results: pd.DataFrame,
                          evaluation_function: Callable[[np.ndarray, np.ndarray], pd.DataFrame]):
-        angles = evaluation_function(designs.get_as_bike_fit().values, SAMPLE_RIDER)
-        result = pd.concat([result, pd.DataFrame(angles, index=result.index)], axis=1)
-        return result
+        evaluation_result = evaluation_function(designs.get_as_bike_fit().values, SAMPLE_RIDER)
+        evaluation_result.index = older_results.index
+        return pd.concat([older_results, evaluation_result], axis=1)
 
     def distance_columns(self) -> List[str]:
         return [distance_column_name(i) for i in range(len(self._target_embeddings))]
@@ -195,7 +195,7 @@ class CombinedOptimizer:
 
 
 def _to_scores_dataframe(scores: np.ndarray):
-    data_frame = pd.DataFrame(np.zeros(shape=(scores.shape[0], 3)))
+    data_frame = pd.DataFrame()
     data_frame['gower_distance'] = scores[:, _GOWER_INDEX]
     data_frame['avg_gower_distance'] = scores[:, _AVG_GOWER_INDEX]
     data_frame['changed_feature_ratio'] = scores[:, _CHANGED_FEATURE_INDEX]
