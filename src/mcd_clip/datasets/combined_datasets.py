@@ -219,12 +219,6 @@ class CombinedDataset:
 
         result['Material'] = result.apply(func=extract_material, axis=1)
 
-    def _append_framed_material(self, result: pd.DataFrame) -> None:
-        encoded_columns = get_encoded_columns(result, column_name='Material', prefix_sep='=')
-        for c in encoded_columns.columns:
-            result[c] = encoded_columns[c].values
-        result.drop(columns=['Material'], inplace=True)
-
     def _get_framed_material_columns(self):
         return FRAMED_MATERIAL_COLUMNS
 
@@ -244,6 +238,28 @@ class CombinedDataset:
             separator=CLIPS_ONE_HOT_ENCODING_SEP
         )
 
+    def _append_framed_material(self, result: pd.DataFrame) -> None:
+        self._append_one_hot_encoded(
+            data=result,
+            columns=['Material'],
+            prefix_sep='='
+        )
+
+    def _append_clips_one_hot_encoded(self, data: pd.DataFrame):
+        self._append_one_hot_encoded(
+            data=data,
+            columns=[c for c in ONE_HOT_ENCODED_CLIPS_COLUMNS if 'material' != c.lower()],
+            prefix_sep=CLIPS_ONE_HOT_ENCODING_SEP
+        )
+
+    def _append_one_hot_encoded(self, data: pd.DataFrame, columns: List[str], prefix_sep: str):
+        relevant_clips_columns = [c for c in ONE_HOT_ENCODED_CLIPS_COLUMNS if 'material' != c.lower()]
+        for column in columns:
+            encoded_dataframe = get_encoded_columns(data, column_name=column, prefix_sep=prefix_sep)
+            for encoded_column in encoded_dataframe.columns:
+                data[encoded_column] = encoded_dataframe[encoded_column].values
+        data.drop(columns=columns, inplace=True)
+
     @classmethod
     def _reverse_one_hot_encoding(cls,
                                   result: pd.DataFrame,
@@ -257,14 +273,6 @@ class CombinedDataset:
         for c in reversed_encoding.columns:
             result[c] = reversed_encoding[c].values
         result.drop(columns=columns_to_drop, inplace=True)
-
-    def _append_clips_one_hot_encoded(self, data: pd.DataFrame):
-        relevant_clips_columns = [c for c in ONE_HOT_ENCODED_CLIPS_COLUMNS if 'material' != c.lower()]
-        for column in relevant_clips_columns:
-            encoded_dataframe = get_encoded_columns(data, column_name=column, prefix_sep=CLIPS_ONE_HOT_ENCODING_SEP)
-            for encoded_column in encoded_dataframe.columns:
-                data[encoded_column] = encoded_dataframe[encoded_column]
-            data.drop(columns=[column], inplace=True)
 
 
 class OriginalCombinedDataset:
