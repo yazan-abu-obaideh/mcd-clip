@@ -2,6 +2,7 @@ import io
 import os
 import random
 from datetime import datetime
+from typing import List
 
 import cairosvg
 import numpy as np
@@ -90,20 +91,23 @@ def run():
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        render_some(generator.sample_with_weights(num_samples=4, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
-                                                  diversity_weight=0,
-                                                  bonus_objectives_weights=np.array([10, 0]).reshape((1, 2))),
-                    run_dir, i, 0)
-        render_some(generator.sample_with_weights(num_samples=4, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
-                                                  diversity_weight=0,
-                                                  bonus_objectives_weights=np.array([0, 10]).reshape((1, 2))),
-                    run_dir, i, 1)
+        render_some(_sample(generator, [0, 10]), run_dir, i, 0)
+        render_some(_sample(generator, [10, 0]), run_dir, i, 1)
+
+
+def _sample(generator: CounterfactualsGenerator,
+            bonus_objective_weights: List[int]):
+    return generator.sample_with_weights(num_samples=4, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
+                                         diversity_weight=0,
+                                         bonus_objectives_weights=np.array(bonus_objective_weights).reshape((1, 2)),
+                                         include_dataset=False)
 
 
 def _generate_with_retry(cumulative: int, generator: CounterfactualsGenerator, seed: int = 23):
     try:
         generator.generate(cumulative, seed=seed)
-    except AssertionError:
+    except AssertionError as e:
+        print(f"Error {e}, retrying...")
         _generate_with_retry(cumulative, generator, random.randint(1, 100))
 
 

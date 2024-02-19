@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from pymoo.core.variable import Variable, Choice, Real
 
+from mcd_clip.datasets.category_maps import CATEGORY_MAPS
 from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
     FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, BIKE_FIT_COLUMNS, UNIQUE_BIKE_FIT_COLUMNS, \
@@ -39,10 +40,10 @@ def _map_framed_column(result, column):
     result.append(Real(bounds=bounds))
 
 
-def _is_categorical(column: str):
-    if column in ['Material', 'SSB_Include', 'CSB_Include']:
+def is_categorical(column_name: str):
+    if column_name in ['Material', 'SSB_Include', 'CSB_Include']:
         return True
-    if column in ONE_HOT_ENCODED_CLIPS_COLUMNS:
+    if column_name in ONE_HOT_ENCODED_CLIPS_COLUMNS:
         return True
     return False
 
@@ -50,8 +51,8 @@ def _is_categorical(column: str):
 def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
     result = []
     for column in dataframe.columns:
-        if _is_categorical(column):
-            options = tuple(dataframe[column].unique())
+        if is_categorical(column):
+            options = tuple(CATEGORY_MAPS[column].keys())
             print(f"Mapping {column} to choice with options {options}")
             result.append(Choice(options=options))
         elif column in FRAMED_COLUMNS:
@@ -88,6 +89,8 @@ class CombinedDataset:
         cls._reverse_framed_one_hot_encoding(result)
         cls._reverse_clips_one_hot_encoding(result)
         cls._append_bike_fit(result, bike_fit_style)
+        cls._category_to_numeric(result)
+        result = result.astype('float64')
         return CombinedDataset(result)
 
     def get_combined(self):
@@ -95,7 +98,8 @@ class CombinedDataset:
 
     def get_as_framed(self) -> pd.DataFrame:
         result = self._data.copy(deep=True)
-        self._append_framed_material(result)
+        self._numeric_to_category(result)
+        self._framed_one_hot_encode(result)
         return pd.DataFrame(result, columns=FRAMED_COLUMNS)
 
     def get_as_bike_fit(self) -> pd.DataFrame:
@@ -111,7 +115,8 @@ class CombinedDataset:
 
     def get_as_clips(self) -> pd.DataFrame:
         data = self._data.copy(deep=True)
-        self._append_framed_material(data)
+        self._numeric_to_category(data)
+        self._framed_one_hot_encode(data)
         self._to_clips_material(data)
         self._append_clips_one_hot_encoded(data)
         self._to_millimeter_columns(data)
@@ -179,7 +184,8 @@ class CombinedDataset:
         data['MATERIAL OHCLASS: ALUMINIUM'] = data[american_spelling]
         data.drop(columns=[american_spelling], inplace=True)
 
-    def _reverse_map(self, one_to_one_map: dict):
+    @classmethod
+    def _reverse_map(cls, one_to_one_map: dict):
         return {
             v: k for k, v in one_to_one_map.items()
         }
@@ -238,7 +244,7 @@ class CombinedDataset:
             separator=CLIPS_ONE_HOT_ENCODING_SEP
         )
 
-    def _append_framed_material(self, result: pd.DataFrame) -> None:
+    def _framed_one_hot_encode(self, result: pd.DataFrame) -> None:
         self._append_one_hot_encoded(
             data=result,
             columns=['Material'],
@@ -253,7 +259,6 @@ class CombinedDataset:
         )
 
     def _append_one_hot_encoded(self, data: pd.DataFrame, columns: List[str], prefix_sep: str):
-        relevant_clips_columns = [c for c in ONE_HOT_ENCODED_CLIPS_COLUMNS if 'material' != c.lower()]
         for column in columns:
             encoded_dataframe = get_encoded_columns(data, column_name=column, prefix_sep=prefix_sep)
             for encoded_column in encoded_dataframe.columns:
@@ -273,6 +278,19 @@ class CombinedDataset:
         for c in reversed_encoding.columns:
             result[c] = reversed_encoding[c].values
         result.drop(columns=columns_to_drop, inplace=True)
+
+    @classmethod
+    def _category_to_numeric(cls, result: pd.DataFrame):
+        for column in result.columns:
+            if column in CATEGORY_MAPS.keys():
+                category_map = cls._reverse_map(CATEGORY_MAPS[column])
+                result[column] = result[column].apply(lambda row_value: category_map[row_value])
+
+    def _numeric_to_category(self, result):
+        for column in result.columns:
+            if column in CATEGORY_MAPS.keys():
+                to_category_map = (CATEGORY_MAPS[column])
+                result[column] = result[column].apply(lambda row_value: to_category_map[row_value])
 
 
 class OriginalCombinedDataset:
