@@ -1,3 +1,5 @@
+import os.path
+
 import numpy as np
 # noinspection PyUnresolvedReferences
 import pandas as pd
@@ -8,6 +10,7 @@ from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_T
 from mcd_clip.datasets.combined_datasets import CombinedDataset, OriginalCombinedDataset
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, TextEmbeddingTarget, ImageEmbeddingTarget
 from mcd_clip.resource_utils import run_result_path, resource_path
+from mcd_clip.result_plots.draw_pair_plots import lyle_plot
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
 
@@ -86,7 +89,42 @@ def render_by_original_index(original_index: str):
     _render_and_save(clips_df, original_index)
 
 
+def draw_lyle_plot():
+    target_embeddings = [
+        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
+        ImageEmbeddingTarget(image_path=resource_path('mtb.png'))
+    ]
+
+    full_df = pd.read_csv(
+        run_result_path(os.path.join('02-19--21.19.56-template-combined-run', 'batch_1.csv')), index_col=0)
+
+    design_targets = DesignTargets(
+        continuous_targets=[
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
+            ContinuousTarget('embedding_distance_1', lower_bound=0.65, upper_bound=0.85),
+            ContinuousTarget('embedding_distance_2', lower_bound=0, upper_bound=0.25),
+            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=5.5),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=full_df['ergonomic_score'].max()),
+            AERODYNAMIC_DRAG_TARGET
+        ])
+
+    mcd_scores = ['gower_distance', 'avg_gower_distance', 'changed_feature_ratio']
+    columns = [
+        'Sim 1 Safety Factor (Inverted)', 'Model Mass', 'embedding_distance_1', 'embedding_distance_2',
+        'Aerodynamic Drag',
+        'ergonomic_score',
+        'Knee Extension', 'Back Angle', 'Armpit Angle',
+    ]
+    lyle_plot(
+        full_df,
+        prediction_columns=columns,
+        continuous_targets=design_targets.continuous_targets,
+        save_path='lyle-plot-now.png'
+    )
+
+
 if __name__ == '__main__':
-    data = pd.read_csv(
-        '/home/yazan/Repositories/Personal/mcd-clip/src/mcd_clip/run-results/02-19--18.52.36-template-A futuristic black cyberpunk-style road racing bicycle/batch_4.csv')
-    render_from_combined_data(data.sample(3))
+    draw_lyle_plot()
