@@ -7,19 +7,17 @@ from pymoo.core.variable import Variable, Choice, Real, Integer
 from mcd_clip.datasets.clips.datatypes_mapper import map_column
 from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS, CLIPS_COLUMNS, CLIPS_IGNORED_MATERIAL, \
     FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS, BIKE_FIT_COLUMNS, UNIQUE_BIKE_FIT_COLUMNS, \
-    FRAMED_CLIPS_INTERSECTION_COLUMNS, ONE_HOT_ENCODED_CLIPS_COLUMNS
+    FRAMED_CLIPS_INTERSECTION_COLUMNS, ONE_HOT_ENCODED_CLIPS_COLUMNS, CLIPS_ONE_HOT_ENCODING_SEP
 from mcd_clip.datasets.one_hot_encoding_util import reverse_one_hot_encoding, get_encoded_columns
 from mcd_clip.resource_utils import resource_path
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
-
-CLIPS_ONE_HOT_ENCODING_SEP = ' OHCLASS: '
 
 BIKE_FIT_DATATYPES = {
     "Stem length": Real(bounds=(25.45, 140.0)),
     "Stem angle": Real(bounds=(-30.0, 32.55)),
     "Crank length": Real(bounds=(142.5, 185.0)),
     "Headset spacers": Real(bounds=(0.0, 50.0)),
-    "Handlebar style": Integer(bounds=(1, 2))
+    "Handlebar style": Choice(options=(1, 2))
 }
 
 FRAMED_MATERIAL_COLUMNS = ['Material=Steel', 'Material=Aluminum', 'Material=Titanium']
@@ -36,20 +34,27 @@ UNSCALED_FRAMED = unscaled_framed_dataset()
 
 
 def _map_framed_column(result, column):
-    name_lower = str(column).lower()
-    if ("material" in name_lower) or ("include" in name_lower):
-        print(f"Mapped {column} to Choice")
-        result.append(Choice(options=(0, 1)))
-    else:
-        bounds = (UNSCALED_FRAMED[column].quantile(0.01), UNSCALED_FRAMED[column].quantile(0.99))
-        print(f"Mapped {column} to Real with bounds {bounds}")
-        result.append(Real(bounds=bounds))
+    bounds = (UNSCALED_FRAMED[column].quantile(0.01), UNSCALED_FRAMED[column].quantile(0.99))
+    print(f"Mapped {column} to Real with bounds {bounds}")
+    result.append(Real(bounds=bounds))
+
+
+def _is_categorical(column: str):
+    if column in ['Material', 'SSB_Include', 'CSB_Include']:
+        return True
+    if column in ONE_HOT_ENCODED_CLIPS_COLUMNS:
+        return True
+    return False
 
 
 def map_combined_datatypes(dataframe: pd.DataFrame) -> List[Variable]:
     result = []
     for column in dataframe.columns:
-        if column in FRAMED_COLUMNS:
+        if _is_categorical(column):
+            options = tuple(dataframe[column].unique())
+            print(f"Mapping column to choice with options {options}")
+            result.append(Choice(options=options))
+        elif column in FRAMED_COLUMNS:
             _map_framed_column(result, column)
         elif column in CLIPS_COLUMNS:
             mapped_datatype = map_column(dataframe[column])

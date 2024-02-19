@@ -82,3 +82,4 @@ CLIPS_COLUMNS = ['CS textfield', 'BB textfield', 'Stack', 'Head angle',
                  'RIM_STYLE front OHCLASS: SPOKED', 'RIM_STYLE front OHCLASS: TRISPOKE',
                  'RIM_STYLE rear OHCLASS: DISC', 'RIM_STYLE rear OHCLASS: SPOKED',
                  'RIM_STYLE rear OHCLASS: TRISPOKE']
+CLIPS_ONE_HOT_ENCODING_SEP = ' OHCLASS: '
