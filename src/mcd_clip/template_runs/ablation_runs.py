@@ -8,10 +8,10 @@ import pandas as pd
 from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget
 
-from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, KNEE_TARGET, ARMPIT_WRIST_TARGET
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
-from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance_column_name, TextEmbeddingTarget
+from mcd_clip.optimization.combined_optimizer import CombinedOptimizer
+from mcd_clip.optimization.embedding_similarity_optimizer import to_full_clips_dataframe
 from mcd_clip.resource_utils import run_result_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
@@ -42,9 +42,7 @@ def average_image(images_paths, batch_dir: str):
 def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     batch_dir = os.path.join(run_dir, f"batch_{batch_number}")
     os.makedirs(batch_dir, exist_ok=False)
-    sampled_counterfactuals = full_df.sort_values(by=distance_column_name(0), ascending=True)[:5]
-    print(f"Closest counterfactuals {sampled_counterfactuals}")
-    clips = CombinedDataset(sampled_counterfactuals).get_as_clips()
+    clips = to_full_clips_dataframe(CombinedDataset(full_df).get_as_clips())
     images_paths = []
     for idx in clips.index:
         rendering_result = IMAGE_CONVERTOR.to_image(clips.loc[idx])
@@ -66,37 +64,33 @@ def get_validity(sampled: pd.DataFrame):
 
 
 def run(ablation: bool):
-    TEXT_TARGET = "A pink road bike with water bottles"
-    GENERATIONS = 250
-    BATCH_SIZE = 50
+    GENERATIONS = 450
+    BATCH_SIZE = 150
     BATCHES = GENERATIONS // BATCH_SIZE
 
-    run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + TEXT_TARGET + "-template-"
+    run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template'
     if ablation:
-        run_id += 'ablation'
+        run_id += '-features-off'
 
     optimizer = CombinedOptimizer(
         design_targets=DesignTargets(
             continuous_targets=[
-                ContinuousTarget(distance_column_name(0), 0, 1),
-                BACK_TARGET,
-                KNEE_TARGET,
-                ARMPIT_WRIST_TARGET
+                ContinuousTarget("Model Mass", 0, 2),
+                ContinuousTarget("Sim 1 Safety Factor (Inverted)", 0, 1),
             ]
         ),
-        target_embeddings=[TextEmbeddingTarget(text_target=TEXT_TARGET)],
-        extra_bonus_objectives=[],
+        target_embeddings=[],
+        extra_bonus_objectives=['Model Mass', 'Sim 1 Safety Factor (Inverted)'],
     )
     optimizer.set_starting_design_by_index('1')
     features_desired = not ablation
     empty_repair_desired = ablation
-    generator = optimizer.build_generator(validation_functions=[
-    ],
-        gower_on=features_desired,
-        average_gower_on=features_desired,
-        changed_feature_on=features_desired,
-        use_empty_repair=empty_repair_desired
-    )
+    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
+                                          gower_on=features_desired,
+                                          average_gower_on=features_desired,
+                                          changed_feature_on=features_desired,
+                                          use_empty_repair=empty_repair_desired
+                                          )
 
     run_dir = run_result_path(run_id)
     os.makedirs(run_dir, exist_ok=False)
@@ -107,18 +101,19 @@ def run(ablation: bool):
 
         score_weight = 10
 
-        sampled = generator.sample_with_weights(num_samples=100,
+        sampled = generator.sample_with_weights(num_samples=500,
                                                 cfc_weight=score_weight,
                                                 gower_weight=score_weight,
                                                 avg_gower_weight=score_weight,
+                                                bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
                                                 diversity_weight=0.1)
         validity = get_validity(sampled)
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled)), validity], axis=1)
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
-        render_some(full_df, run_dir, i)
+        render_some(full_df.sample(5), run_dir, i)
 
 
 if __name__ == '__main__':
-    run(ablation=False)
     run(ablation=True)
+    run(ablation=False)
