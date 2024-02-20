@@ -127,7 +127,7 @@ def draw_lyle_plot_thing():
     columns = [
         'Sim 1 Safety Factor (Inverted)', 'Model Mass', 'embedding_distance_1', 'embedding_distance_2',
         'Aerodynamic Drag',
-        'Ergonomic Factor (Inverted)',
+        'ergonomic_score',
         'Knee Extension', 'Back Angle', 'Armpit Angle',
     ]
 
@@ -135,7 +135,7 @@ def draw_lyle_plot_thing():
         continuous_targets=[
             ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
             ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
-            ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=60),
             ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
             ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
             ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
@@ -149,6 +149,8 @@ def draw_lyle_plot_thing():
     counterfactuals_with_scores = counterfactuals_with_scores[::-1]
 
     dataset = pd.read_csv(run_result_path('dataset_with_predictions.csv'), index_col=0)
+    dataset.replace(to_replace=[np.inf, -np.inf], value=np.nan, inplace=True)
+    dataset.dropna(axis=0, inplace=True)
     lyle_plot(
         counterfactuals=counterfactuals_with_scores,
         dataset_w_predictions=dataset,

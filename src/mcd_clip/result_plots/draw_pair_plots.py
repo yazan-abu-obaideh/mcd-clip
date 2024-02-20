@@ -2,6 +2,7 @@ from typing import List
 
 import matplotlib.patches as patches
 import matplotlib.text
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from decode_mcd import DesignTargets, ContinuousTarget
@@ -73,7 +74,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
               save_path: str):
     obj_scores = pd.DataFrame(counterfactuals, columns=prediction_columns)
 
-    s = (100, 20)
+    s = [100] + [20] * (len(counterfactuals) - 1)
     fontsize = 14
     markers = ["X", "."]
     palette = ["#000000", "#3291a8", ]
@@ -83,7 +84,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     if True:
         dataset = pd.DataFrame(dataset_w_predictions, columns=prediction_columns)
         obj_scores = pd.concat([obj_scores, dataset], axis=0)
-        s = s + (20,)
+        s = s + [20] * len(dataset)
         markers = markers + ["."]
         # palette = palette + ["#eba834"]
         # palette = palette + ["#f24954"]
@@ -95,7 +96,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     maximums = []
     plot_minimums = []
     plot_maximums = []
-    outlier_thresh = 3
+    outlier_thresh = 0.5
     for i, target in enumerate(continuous_targets):
         name = target.label
         score = obj_scores[name]
@@ -107,13 +108,16 @@ def lyle_plot(counterfactuals: pd.DataFrame,
             query = score[0]
             mean = score.mean(axis=0)
             std = score.std(axis=0)
+            _min = score.min(axis=0)
+            _max = score.max(axis=0)
             plot_minimum = mean - outlier_thresh * std
             plot_maximum = mean + outlier_thresh * std
-            plot_minimums.append(min(plot_minimum, query))
-            plot_maximums.append(max(plot_maximum, query))
+            plot_minimums.append(max(min(plot_minimum, query), _min))
+            plot_maximums.append(min(max(plot_maximum, query), _max))
         else:
             plot_minimums.append(score.min(axis=0))
             plot_maximums.append(obj_scores.max(axis=0))
+    plot_minimums[0] = 0.01
 
     scores = pd.concat(scores, axis=1)
     # print(scores)
@@ -129,7 +133,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     palette = palette[::-1]
 
     grid = sns.pairplot(scores, hue="class", kind="scatter", diag_kind="kde", palette=palette, markers=markers,
-                        plot_kws={"s": s}, diag_kws={"cut": 0}, corner=True)
+                        plot_kws={"s": 25}, diag_kws={"cut": 0}, corner=True)
 
     # add shaded region to plot
     for i, ax in enumerate(grid.axes.ravel()):
