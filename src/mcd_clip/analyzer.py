@@ -135,8 +135,8 @@ def draw_lyle_plot():
 
 
 def draw_bikes_grid():
-    run_dir = run_result_path('02-20--06.27.53-template-A futuristic black cyberpunk-style road racing bicycle (copy)')
-    batch = '3'
+    run_dir = run_result_path('02-19--22.08.27-template-A yellow road-racing bicycle (copy)')
+    batch = '4'
     images_grid = [[], [], []]
     goals = ['image', 'both', 'text']
     for i in range(3):
@@ -163,4 +163,4 @@ def draw_bikes_grid():
 
 
 if __name__ == '__main__':
-    draw_lyle_plot()
+    draw_bikes_grid()

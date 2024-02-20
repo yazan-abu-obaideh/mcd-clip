@@ -107,6 +107,10 @@ class CombinedOptimizer:
             predictions_dataset=self.predict(self._starting_dataset),
             query_x=self.starting_design.get_combined(),
             design_targets=self._design_targets,
+            features_to_vary=[f for f
+                              in self._starting_dataset.get_combined().columns
+                              if 'bottle' not in f
+                              ],
             datatypes=map_combined_datatypes(self._starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
         )

@@ -64,7 +64,7 @@ def get_validity(sampled: pd.DataFrame):
 
 
 def run(ablation: bool):
-    GENERATIONS = 450
+    GENERATIONS = 300
     BATCH_SIZE = 150
     BATCHES = GENERATIONS // BATCH_SIZE
 
@@ -75,8 +75,8 @@ def run(ablation: bool):
     optimizer = CombinedOptimizer(
         design_targets=DesignTargets(
             continuous_targets=[
-                ContinuousTarget("Model Mass", 0, 2),
-                ContinuousTarget("Sim 1 Safety Factor (Inverted)", 0, 1),
+                ContinuousTarget("Model Mass", 0, 1.5),
+                ContinuousTarget("Sim 1 Safety Factor (Inverted)", 0, 0.85),
             ]
         ),
         target_embeddings=[],
@@ -99,7 +99,7 @@ def run(ablation: bool):
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        score_weight = 10
+        score_weight = 20
 
         sampled = generator.sample_with_weights(num_samples=500,
                                                 cfc_weight=score_weight,
