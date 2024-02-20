@@ -10,6 +10,7 @@ import pandas as pd
 from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
 
+from mcd_clip.datasets.columns_constants import CLIPS_COLUMNS, FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance_column_name, TextEmbeddingTarget, \
@@ -81,7 +82,11 @@ def run():
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
                                           features_to_vary=[f for f
                                                             in optimizer._starting_dataset.get_combined().columns
-                                                            if 'bottle' not in f
+                                                            if ('bottle' not in f) and (
+                                                                    (f in CLIPS_COLUMNS)
+                                                                    or (f in FRAMED_TO_CLIPS_IDENTICAL.keys())
+                                                                    or (f in FRAMED_TO_CLIPS_UNITS.keys())
+                                                            )
                                                             ]
                                           )
     generator.use_empty_repair(False)

@@ -1,17 +1,16 @@
-import os.path
 from typing import List
 
+import matplotlib.patches as patches
 import matplotlib.text
 import pandas as pd
 import seaborn as sns
-from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
-
-import matplotlib.patches as patches
+from decode_mcd import DesignTargets, ContinuousTarget
+from matplotlib import pyplot as plt
 from matplotlib.path import Path
 
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET
 from mcd_clip.optimization.combined_optimizer import TextEmbeddingTarget, ImageEmbeddingTarget
-from mcd_clip.resource_utils import run_result_path, resource_path
+from mcd_clip.resource_utils import resource_path
 
 target_embeddings = [
     TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
@@ -68,47 +67,90 @@ def regular_plot():
 
 
 def lyle_plot(counterfactuals: pd.DataFrame,
+              dataset_w_predictions: pd.DataFrame,
               prediction_columns: List[str],
               continuous_targets: List[DesignTargets],
               save_path: str):
-    # replace with get_predictions
-    column_names = prediction_columns
-    obj_scores = pd.DataFrame(counterfactuals, columns=column_names)
+    obj_scores = pd.DataFrame(counterfactuals, columns=prediction_columns)
+
+    s = (100, 20)
+    fontsize = 14
+    markers = ["X", "."]
+    palette = ["#000000", "#3291a8", ]
+    classes = ["Query"] + ["Counterfactuals"] * (len(counterfactuals) - 1)
+
+    # Add in Dataset
+    if True:
+        dataset = pd.DataFrame(dataset_w_predictions, columns=prediction_columns)
+        obj_scores = pd.concat([obj_scores, dataset], axis=0)
+        s = s + (20,)
+        markers = markers + ["."]
+        # palette = palette + ["#eba834"]
+        # palette = palette + ["#f24954"]
+        palette = palette + ["#000000"]
+        classes = classes + ["Dataset"] * len(dataset)
+
     scores = []
     minimums = []
     maximums = []
+    plot_minimums = []
+    plot_maximums = []
+    outlier_thresh = 3
     for i, target in enumerate(continuous_targets):
         name = target.label
         score = obj_scores[name]
         scores.append(score)
         minimums.append(target.lower_bound)
         maximums.append(target.upper_bound)
+        if outlier_thresh:
+            score = score.values
+            query = score[0]
+            mean = score.mean(axis=0)
+            std = score.std(axis=0)
+            plot_minimum = mean - outlier_thresh * std
+            plot_maximum = mean + outlier_thresh * std
+            plot_minimums.append(min(plot_minimum, query))
+            plot_maximums.append(max(plot_maximum, query))
+        else:
+            plot_minimums.append(score.min(axis=0))
+            plot_maximums.append(obj_scores.max(axis=0))
+
     scores = pd.concat(scores, axis=1)
     # print(scores)
     num = len(scores.columns)
     # add column to distinguish query
-    classes = ["Counterfactual"] * (len(counterfactuals) - 1) + ["Query"]
+
     scores['class'] = classes
-    # seaborn pairplot of validity
-    palette = ["#3291a8", "#000000"]
-    markers = [".", "X"]
-    s = 20
+
+    # invert order of points
+    scores = scores.iloc[::-1]
+    s = s[::-1]
+    markers = markers[::-1]
+    palette = palette[::-1]
+
     grid = sns.pairplot(scores, hue="class", kind="scatter", diag_kind="kde", palette=palette, markers=markers,
-                        plot_kws={"s": s}, diag_kws={"cut": 0})
-    proxy = [patches.Patch(color='gray', alpha=0.5, label='Shaded Region')]
+                        plot_kws={"s": s}, diag_kws={"cut": 0}, corner=True)
 
     # add shaded region to plot
     for i, ax in enumerate(grid.axes.ravel()):
         x_idx = i % num
         y_idx = i // num
-        minx_i = max(minimums[x_idx], ax.get_xlim()[0])
-        maxx_i = min(maximums[x_idx], ax.get_xlim()[1])
-        miny_i = max(minimums[y_idx], ax.get_ylim()[0])
-        maxy_i = min(maximums[y_idx], ax.get_ylim()[1])
-        minx_o = ax.get_xlim()[0]
-        maxx_o = ax.get_xlim()[1]
-        miny_o = ax.get_ylim()[0]
-        maxy_o = ax.get_ylim()[1]
+        if True:
+            if x_idx > y_idx:
+                continue
+
+        minx_i = max(minimums[x_idx], plot_minimums[x_idx])
+        maxx_i = min(maximums[x_idx], plot_maximums[x_idx])
+        miny_i = max(minimums[y_idx], plot_minimums[y_idx])
+        maxy_i = min(maximums[y_idx], plot_maximums[y_idx])
+        minx_o = plot_minimums[x_idx]
+        maxx_o = plot_maximums[x_idx]
+        miny_o = plot_minimums[y_idx]
+        maxy_o = plot_maximums[y_idx]
+
+        # set axis limits
+        ax.set_xlim(minx_o, maxx_o)
+        ax.set_ylim(miny_o, maxy_o)
 
         if x_idx != y_idx:
             vertices = [
@@ -143,16 +185,21 @@ def lyle_plot(counterfactuals: pd.DataFrame,
             # Create a patch based on the path object
             patch = patches.PathPatch(path, facecolor='gray', lw=0, alpha=0.2)
             ax.add_patch(patch)
-            pass
         else:
-            rect = patches.Rectangle((minx_i, miny_o), maxx_i - minx_i, maxy_o - miny_o, linewidth=0, edgecolor='black',
-                                     facecolor='gray', alpha=0.2)
+            rect = patches.Rectangle((maxx_i, miny_o), maxx_o - maxx_i, maxy_o - miny_o, linewidth=0,
+                                     edgecolor='black', facecolor='gray', alpha=0.2)
             ax.add_patch(rect)
-            pass
+            rect = patches.Rectangle((minx_o, miny_o), minx_i - minx_o, maxy_o - miny_o, linewidth=0,
+                                     edgecolor='black', facecolor='gray', alpha=0.2)
+            ax.add_patch(rect)
+
+        # set axis label sizes
+        ax.set_xlabel(ax.get_xlabel(), fontsize=fontsize)
+        ax.set_ylabel(ax.get_ylabel(), fontsize=fontsize)
 
     # add shaded region to legend
     legend = grid.fig.legends[0]  # Get the first (and typically only) legend
-    handles, labels = legend.legendHandles, [text.get_text() for text in legend.texts]
+    handles, labels = legend.legend_handles, [text.get_text() for text in legend.texts]
     handles.append(patch)
     labels.append('Invalid Region')
 
@@ -160,6 +207,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     for legend in grid.fig.legends:
         legend.remove()
     # Create replacement
-    grid.fig.legend(handles, labels, loc='upper right', title='Legend')
+    grid.fig.legend(handles, labels, loc='upper right', title='', fontsize=fontsize,
+                    bbox_to_anchor=(0.8, 1))
 
     grid.savefig(save_path)

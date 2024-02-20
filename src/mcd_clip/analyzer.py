@@ -94,6 +94,70 @@ def render_by_original_index(original_index: str):
     _render_and_save(clips_df, original_index)
 
 
+def get_dataset_predictions():
+    target_embeddings = [
+        TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
+        ImageEmbeddingTarget(image_path=resource_path('mtb.png'))
+    ]
+    design_targets = DesignTargets(
+        continuous_targets=[
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
+            ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
+            ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
+            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
+        ])
+
+    opt = CombinedOptimizer(design_targets=design_targets, target_embeddings=target_embeddings,
+                            extra_bonus_objectives=['ergonomic_score'])
+    df = OriginalCombinedDataset().get_combined_dataset().get_combined()
+    predictions = opt.predict(OriginalCombinedDataset().get_combined_dataset())
+    for column in predictions.columns:
+        df[column] = predictions[column]
+
+    df.to_csv(run_result_path('dataset_with_predictions.csv'))
+
+
+def draw_lyle_plot_thing():
+    mcd_scores = ['gower_distance', 'avg_gower_distance', 'changed_feature_ratio']
+    columns = [
+        'Sim 1 Safety Factor (Inverted)', 'Model Mass', 'embedding_distance_1', 'embedding_distance_2',
+        'Aerodynamic Drag',
+        'Ergonomic Factor (Inverted)',
+        'Knee Extension', 'Back Angle', 'Armpit Angle',
+    ]
+
+    design_targets = DesignTargets(
+        continuous_targets=[
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
+            ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
+            ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
+            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
+        ])
+
+    counterfactuals_with_scores = pd.read_csv(
+        run_result_path(os.path.join('02-20--06.54.16-template-combined-run', 'batch_3.csv')), index_col=0)
+    counterfactuals_with_scores = counterfactuals_with_scores[::-1]
+
+    dataset = pd.read_csv(run_result_path('dataset_with_predictions.csv'), index_col=0)
+    lyle_plot(
+        counterfactuals=counterfactuals_with_scores,
+        dataset_w_predictions=dataset,
+        continuous_targets=design_targets.continuous_targets,
+        prediction_columns=mcd_scores + columns,
+        save_path='lyle-plot-latest.png'
+    )
+
+
 def draw_lyle_plot():
     target_embeddings = [
         TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
@@ -108,15 +172,15 @@ def draw_lyle_plot():
 
     design_targets = DesignTargets(
         continuous_targets=[
-            # ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            # ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
-            # ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
-            # ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
-            # ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
-            # ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
-            ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
-            ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
-            ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
+            ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
+            ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
+            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
         ])
 
     mcd_scores = ['gower_distance', 'avg_gower_distance', 'changed_feature_ratio']
@@ -163,4 +227,4 @@ def draw_bikes_grid():
 
 
 if __name__ == '__main__':
-    draw_bikes_grid()
+    draw_lyle_plot_thing()
