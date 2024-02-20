@@ -76,7 +76,7 @@ class CombinedOptimizer:
         self._starting_dataset = self._build_starting_dataset()
         self.structural_enabled = ('Model Mass' in design_targets.get_all_constrained_labels() or
                                    "Sim 1 Safety Factor (Inverted)" in design_targets.get_all_constrained_labels())
-        self.starting_design = None
+        self.starting_design: CombinedDataset = None
 
     def set_starting_design_by_index(self, design_index: str):
         self.starting_design = self._get_starting_design(design_index)
@@ -94,6 +94,7 @@ class CombinedOptimizer:
                         average_gower_on: bool = True,
                         changed_feature_on: bool = True,
                         use_empty_repair: bool = False,
+                        features_to_vary: List[str] = None,
                         validation_functions: List[Callable] = None) -> CounterfactualsGenerator:
 
         if self.starting_design is None:
@@ -107,10 +108,7 @@ class CombinedOptimizer:
             predictions_dataset=self.predict(self._starting_dataset),
             query_x=self.starting_design.get_combined(),
             design_targets=self._design_targets,
-            features_to_vary=[f for f
-                              in self._starting_dataset.get_combined().columns
-                              if 'bottle' not in f
-                              ],
+            features_to_vary=features_to_vary,
             datatypes=map_combined_datatypes(self._starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
         )

@@ -8,6 +8,7 @@ import pandas as pd
 from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget
 
+from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer
@@ -64,8 +65,8 @@ def get_validity(sampled: pd.DataFrame):
 
 
 def run(ablation: bool):
-    GENERATIONS = 300
-    BATCH_SIZE = 150
+    GENERATIONS = 100
+    BATCH_SIZE = 50
     BATCHES = GENERATIONS // BATCH_SIZE
 
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template'
@@ -85,11 +86,14 @@ def run(ablation: bool):
     optimizer.set_starting_design_by_index('1')
     features_desired = not ablation
     empty_repair_desired = ablation
-    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
+    features_to_vary = [feature for feature in optimizer._starting_dataset.get_combined().columns if
+                        ('material' in str(feature).lower() or feature in FRAMED_COLUMNS)]
+    generator = optimizer.build_generator(validation_functions=[],
                                           gower_on=features_desired,
                                           average_gower_on=features_desired,
                                           changed_feature_on=features_desired,
-                                          use_empty_repair=empty_repair_desired
+                                          features_to_vary=features_to_vary,
+                                          use_empty_repair=empty_repair_desired,
                                           )
 
     run_dir = run_result_path(run_id)
@@ -99,14 +103,13 @@ def run(ablation: bool):
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        score_weight = 20
-
         sampled = generator.sample_with_weights(num_samples=500,
-                                                cfc_weight=score_weight,
-                                                gower_weight=score_weight,
-                                                avg_gower_weight=score_weight,
+                                                cfc_weight=1,
+                                                gower_weight=1,
+                                                avg_gower_weight=500,
                                                 bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
-                                                diversity_weight=0.1)
+                                                diversity_weight=0.1,
+                                                include_dataset=False)
         validity = get_validity(sampled)
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled)), validity], axis=1)
         assert len(full_df) == len(sampled)

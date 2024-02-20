@@ -78,7 +78,12 @@ def run():
         extra_bonus_objectives=[]
     )
     optimizer.set_starting_design_by_index('1')
-    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS)
+    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
+                                          features_to_vary=[f for f
+                                                            in optimizer._starting_dataset.get_combined().columns
+                                                            if 'bottle' not in f
+                                                            ]
+                                          )
     generator.use_empty_repair(False)
 
     run_dir = run_result_path(run_id)

@@ -21,41 +21,12 @@ class SimpleAblation2Dimensions:
     def _run_with_features(self):
         self._do_2d_case(ablation=False)
 
-    def _run(self, features: bool):
-        pass
-
     def validity(self, _x):  # Validity function for the 2D case
         a = _x["X"]  # Separate the two dimensions for clarity
         b = _x["Y"]
         point_in_arcs = np.less(
             np.power(np.power(np.power((a - b), 6) - 1, 2) + np.power(np.power((a + b), 6) - 1, 2), 2), 0.99)
         return point_in_arcs
-
-    def _draw_arcs(self):
-        pass
-
-    def _draw_circles(self):
-        radii = [5, 4, 3, 2, 1]
-
-        # Define the colors for the circles
-        colors = ['red', 'blue'] * len(radii)
-
-        # Create a figure and an axis
-        fig, ax = plt.subplots()
-
-        # For each radius, draw a circle
-        for r, color in zip(radii, colors):
-            circle = plt.Circle((0, 0), r, color=color, alpha=0.5)
-            ax.add_artist(circle)
-
-        # Set the aspect of the plot to be equal, so the circles appear as circles
-        ax.set_aspect('equal')
-
-        # Set the limits of the plot's x and y axes
-        ax.set_xlim(-max(radii) - 1, max(radii) + 1)
-        ax.set_ylim(-max(radii) - 1, max(radii) + 1)
-
-        plt.savefig('circles.png')
 
     def plot_cfs(self,
                  counterfactuals,
@@ -125,9 +96,12 @@ class SimpleAblation2Dimensions:
                                              initialize_from_dataset=True)
         generator.use_empty_repair(ablation)
         generator.generate(n_generations=100)
-        counterfactuals = generator.sample_with_dtai(num_samples=50, gower_weight=0.5,
-                                                     avg_gower_weight=10, cfc_weight=0.5,
-                                                     diversity_weight=0.2, include_dataset=False,
+        counterfactuals = generator.sample_with_dtai(num_samples=100,
+                                                     gower_weight=0.25,
+                                                     avg_gower_weight=100,
+                                                     cfc_weight=0.5,
+                                                     diversity_weight=0.1,
+                                                     include_dataset=False,
                                                      num_dpp=10000)
         self.plot_cfs(counterfactuals.values,
                       (0, 0),

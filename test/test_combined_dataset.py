@@ -16,6 +16,14 @@ class CombinedDatasetTest(unittest.TestCase):
         self.framed = original_combined_dataset._get_framed_unscaled()
         self._bike_fit = original_combined_dataset._get_bike_fit_corrected_index()
 
+    def test_length_does_not_change(self):
+        original_len = len(self.original_combined.get_combined())
+        self.assertEqual(original_len, len(self.original_combined.get_as_clips()))
+        self.assertEqual(original_len, len(self.original_combined.get_as_framed()))
+        self.assertEqual(original_len, len(self.original_combined.get_as_bike_fit()))
+        self.assertEqual(original_len,
+                         len(CombinedDataset(self.original_combined.get_combined()).get_combined()))
+
     def test_constructor(self):
         dataset = CombinedDataset(self.original_combined.get_combined())
         np_test.assert_array_equal(
