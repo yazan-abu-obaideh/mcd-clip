@@ -133,19 +133,19 @@ def draw_lyle_plot_thing():
 
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
-            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=60),
-            ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
-            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
-            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            ContinuousTarget('Safety Factor', lower_bound=1.316, upper_bound=10),
+            ContinuousTarget('Frame Mass', lower_bound=2, upper_bound=4),
+            ContinuousTarget('Ergonomics', lower_bound=0, upper_bound=47),
+            ContinuousTarget(label="Drag Force $\downarrow$", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label='Text Match', lower_bound=0, upper_bound=0.73),
+            ContinuousTarget(label='Image Match', lower_bound=0, upper_bound=0.11),
             # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
             # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
             # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
         ])
 
     counterfactuals_with_scores = pd.read_csv(
-        run_result_path(os.path.join('02-20--06.54.16-template-combined-run', 'batch_3.csv')), index_col=0)
+        run_result_path(os.path.join('02-21--01.09.38-template-combined-run', 'batch_3.csv')), index_col=0)
     counterfactuals_with_scores = counterfactuals_with_scores[::-1]
 
     dataset = pd.read_csv(run_result_path('dataset_with_predictions.csv'), index_col=0)
@@ -230,3 +230,4 @@ def draw_bikes_grid():
 
 if __name__ == '__main__':
     draw_lyle_plot_thing()
+    render_by_original_index('739')

@@ -102,15 +102,15 @@ def run():
     ]
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
-            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=60),
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=0.76),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=4),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=47),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
             ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
-            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
-            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.73),
+            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.11),
         ]
 
     )
@@ -138,10 +138,10 @@ def run():
         _generate_with_retry(cumulative, generator)
         full_df = _build_full_df(generator, optimizer, starting_design)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        lyle_plot(full_df,
-                  generator._problem._data_package.predictions_dataset.columns,
-                  generator._problem._data_package.design_targets.continuous_targets,
-                  os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
+        # lyle_plot(full_df,
+        #           generator._problem._data_package.predictions_dataset.columns,
+        #           generator._problem._data_package.design_targets.continuous_targets,
+        #           os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
         render_some(full_df, run_dir, i)
 
 
