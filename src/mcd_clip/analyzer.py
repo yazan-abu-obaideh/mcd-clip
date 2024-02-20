@@ -1,14 +1,19 @@
+import io
 import os.path
 
+import cairosvg
 import numpy as np
 # noinspection PyUnresolvedReferences
 import pandas as pd
+from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget
+from matplotlib import pyplot as plt
 
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET
 from mcd_clip.datasets.combined_datasets import CombinedDataset, OriginalCombinedDataset
-from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, TextEmbeddingTarget, ImageEmbeddingTarget
+from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, TextEmbeddingTarget, ImageEmbeddingTarget, \
+    distance_column_name
 from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.result_plots.draw_pair_plots import lyle_plot
 from mcd_clip.singletons import IMAGE_CONVERTOR
@@ -96,34 +101,65 @@ def draw_lyle_plot():
     ]
 
     full_df = pd.read_csv(
-        run_result_path(os.path.join('02-19--21.19.56-template-combined-run', 'batch_1.csv')), index_col=0)
+        run_result_path(os.path.join('02-20--06.54.16-template-combined-run', 'batch_3.csv')), index_col=0)
+
+    full_df.rename(columns={'ergonomic_score': 'Ergonomic Factor (Inverted)'},
+                   inplace=True)
 
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
-            # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
-            # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
-            ContinuousTarget('embedding_distance_1', lower_bound=0.65, upper_bound=0.85),
-            ContinuousTarget('embedding_distance_2', lower_bound=0, upper_bound=0.25),
-            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=5.5),
-            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=full_df['ergonomic_score'].max()),
-            AERODYNAMIC_DRAG_TARGET
+            # ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
+            # ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
+            # ContinuousTarget('Ergonomic Factor (Inverted)', lower_bound=0, upper_bound=60),
+            # ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
+            # ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
+            # ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+            ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
+            ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
+            ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
         ])
 
     mcd_scores = ['gower_distance', 'avg_gower_distance', 'changed_feature_ratio']
     columns = [
         'Sim 1 Safety Factor (Inverted)', 'Model Mass', 'embedding_distance_1', 'embedding_distance_2',
         'Aerodynamic Drag',
-        'ergonomic_score',
+        'Ergonomic Factor (Inverted)',
         'Knee Extension', 'Back Angle', 'Armpit Angle',
     ]
     lyle_plot(
         full_df,
-        prediction_columns=columns,
+        prediction_columns=columns + mcd_scores,
         continuous_targets=design_targets.continuous_targets,
-        save_path='lyle-plot-now.png'
+        save_path=run_result_path('lyle-plot-scores.png')
     )
+
+
+def draw_bikes_grid():
+    run_dir = run_result_path('02-20--06.27.53-template-A futuristic black cyberpunk-style road racing bicycle (copy)')
+    batch = '3'
+    images_grid = [[], [], []]
+    goals = ['image', 'both', 'text']
+    for i in range(3):
+        goals_dir = os.path.join(run_dir, f'batch_{batch}_distance_{goals[i]}')
+        image_paths = [im for im in os.listdir(goals_dir) if '.svg' in im]
+        print(f"{image_paths=}")
+        for j in range(3):
+            joined = os.path.join(goals_dir, image_paths[2 - j])
+            with open(joined, 'rb') as file:
+                images_grid[i].append(file.read())
+
+    n = 3
+
+    fig, axs = plt.subplots(n, n, figsize=(15, 10))
+
+    for i in range(n):
+        for j in range(n):
+            print("Rendering image...")
+            ax = axs[i, j]
+            image_open = Image.open(io.BytesIO(cairosvg.svg2png(images_grid[j][i])))
+            ax.imshow(np.asarray(image_open, dtype='int32'))
+            ax.axis('off')
+    plt.savefig(run_result_path('bikes_array.png'))
 
 
 if __name__ == '__main__':

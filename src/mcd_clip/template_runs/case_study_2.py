@@ -2,6 +2,7 @@ import io
 import os
 import random
 from datetime import datetime
+from typing import List
 
 import cairosvg
 import numpy as np
@@ -41,8 +42,8 @@ def average_image(images_paths, batch_dir: str):
     out.save(os.path.join(batch_dir, "average.png"))
 
 
-def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance_column_index: int):
-    batch_dir = os.path.join(run_dir, f"batch_{batch_number}_distance_{distance_column_index}")
+def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance_column_suffix: str):
+    batch_dir = os.path.join(run_dir, f"batch_{batch_number}_distance_{distance_column_suffix}")
     os.makedirs(batch_dir, exist_ok=False)
     print(f"Closest counterfactuals {full_df}")
     clips = to_full_clips_dataframe(CombinedDataset(full_df).get_as_clips())
@@ -91,23 +92,38 @@ def run():
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        render_some(_sample(optimizer, generator, 0), run_dir, i, 0)
-        render_some(_sample(optimizer, generator, 1), run_dir, i, 1)
+        render_some(_sample(optimizer, generator, 0), run_dir, i, 'text')
+        render_some(_sample(optimizer, generator, 1), run_dir, i, 'image')
+        render_some(_balance_sample(generator,
+                                    n_samples=3,
+                                    objective_weights=[1, 1],
+                                    diversity_weight=0.1),
+                    run_dir, i, 'both')
 
 
 def _sample(
         optimizer: CombinedOptimizer,
         generator: CounterfactualsGenerator, distance_column_index: int):
-    as_many = generator.sample_with_weights(num_samples=1000, cfc_weight=1,
-                                            gower_weight=1, avg_gower_weight=1,
-                                            bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
-                                            diversity_weight=0.1, include_dataset=False)
+    as_many = _balance_sample(generator,
+                              objective_weights=[1 * (1 - distance_column_index), 1 * distance_column_index],
+                              diversity_weight=0.01,
+                              n_samples=500)
     column_ = distance_column_name(distance_column_index)
     as_many[column_] = optimizer.predict(CombinedDataset(as_many))[column_]
-    return as_many.sort_values(by=column_, ascending=True)[:5]
+    return as_many.sort_values(by=column_, ascending=True)[:3]
 
 
-def _generate_with_retry(cumulative: int, generator: CounterfactualsGenerator, seed: int = 23):
+def _balance_sample(generator: CounterfactualsGenerator,
+                    objective_weights: List[int],
+                    diversity_weight: float,
+                    n_samples: int):
+    return generator.sample_with_weights(num_samples=n_samples, cfc_weight=1,
+                                         gower_weight=1, avg_gower_weight=1,
+                                         bonus_objectives_weights=np.array(objective_weights).reshape((1, 2)),
+                                         diversity_weight=diversity_weight, include_dataset=False)
+
+
+def _generate_with_retry(cumulative: int, generator: CounterfactualsGenerator, seed: int = 92):
     try:
         generator.generate(cumulative, seed=seed)
     except AssertionError as e:

@@ -68,15 +68,16 @@ def regular_plot():
 
 
 def lyle_plot(counterfactuals: pd.DataFrame,
-              generator: CounterfactualsGenerator,
+              prediction_columns: List[str],
+              continuous_targets: List[DesignTargets],
               save_path: str):
     # replace with get_predictions
-    column_names = generator._problem._data_package.predictions_dataset.columns
+    column_names = prediction_columns
     obj_scores = pd.DataFrame(counterfactuals, columns=column_names)
     scores = []
     minimums = []
     maximums = []
-    for i, target in enumerate(generator._problem._data_package.design_targets.continuous_targets):
+    for i, target in enumerate(continuous_targets):
         name = target.label
         score = obj_scores[name]
         scores.append(score)

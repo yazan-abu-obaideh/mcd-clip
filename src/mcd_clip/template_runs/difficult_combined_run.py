@@ -92,8 +92,8 @@ def _build_full_df(generator: CounterfactualsGenerator,
 
 
 def run():
-    GENERATIONS = 320
-    BATCH_SIZE = 80
+    GENERATIONS = 150
+    BATCH_SIZE = 50
     BATCHES = GENERATIONS // BATCH_SIZE
 
     target_embeddings = [
@@ -103,21 +103,26 @@ def run():
     design_targets = DesignTargets(
         continuous_targets=[
             ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-            ContinuousTarget('Model Mass', lower_bound=0, upper_bound=5.5),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=5.5),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=60),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
-            # AERODYNAMIC_DRAG_TARGET
-        ])
+            ContinuousTarget(label="Aerodynamic Drag", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label=distance_column_name(0), lower_bound=0, upper_bound=0.74),
+            ContinuousTarget(label=distance_column_name(1), lower_bound=0, upper_bound=0.15),
+        ]
 
-    bonus_objectives = ["Model Mass", AERODYNAMIC_DRAG_TARGET.label]
+    )
+
+    extra_bonus_objective = ["Model Mass", "ergonomic_score", AERODYNAMIC_DRAG_TARGET.label]
 
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + "-template-" + 'combined-run'
 
     optimizer = CombinedOptimizer(
         design_targets=design_targets,
         target_embeddings=target_embeddings,
-        extra_bonus_objectives=bonus_objectives
+        extra_bonus_objectives=extra_bonus_objective
     )
     optimizer.set_starting_design_by_index('1548')
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS)
@@ -133,7 +138,10 @@ def run():
         _generate_with_retry(cumulative, generator)
         full_df = _build_full_df(generator, optimizer, starting_design)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        lyle_plot(full_df, generator, os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
+        lyle_plot(full_df,
+                  generator._problem._data_package.predictions_dataset.columns,
+                  generator._problem._data_package.design_targets.continuous_targets,
+                  os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
         render_some(full_df, run_dir, i)
 
 
