@@ -1,4 +1,5 @@
 import os
+import os
 import random
 from datetime import datetime
 
@@ -75,9 +76,11 @@ def build_dataset_with_predictions(combined_optimizer: CombinedOptimizer):
     return df
 
 
-def run():
-    GENERATIONS = 30
-    BATCH_SIZE = 30
+def run(plot=True,
+        generations=180,
+        batch_size=60):
+    GENERATIONS = generations
+    BATCH_SIZE = batch_size
     BATCHES = GENERATIONS // BATCH_SIZE
 
     target_embeddings = [
@@ -120,14 +123,15 @@ def run():
     for i in range(1, BATCHES + 1):
         cumulative = i * BATCH_SIZE
         _generate_with_retry(cumulative, generator)
-        full_df = _build_cfs_with_query(generator, optimizer, starting_design)
-        full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        custom_plot(full_df,
-                    build_dataset_with_predictions(optimizer).sample(300),
-                    generator._problem._data_package.predictions_dataset.columns,
-                    generator._problem._data_package.design_targets.continuous_targets,
-                    os.path.join(run_dir, os.path.join(run_dir, f"lyle_fig_batch_{i}.png")))
-        render_some(full_df, run_dir, i)
+        if plot:
+            full_df = _build_cfs_with_query(generator, optimizer, starting_design)
+            full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
+            custom_plot(full_df,
+                        build_dataset_with_predictions(optimizer).sample(300),
+                        generator._problem._data_package.predictions_dataset.columns,
+                        generator._problem._data_package.design_targets.continuous_targets,
+                        os.path.join(run_dir, os.path.join(run_dir, f"lyle_fig_batch_{i}.png")))
+            render_some(full_df, run_dir, i)
 
 
 if __name__ == '__main__':
