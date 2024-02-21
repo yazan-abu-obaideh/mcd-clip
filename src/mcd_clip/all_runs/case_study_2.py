@@ -55,7 +55,7 @@ def run():
     optimizer.set_starting_design_by_index('1')
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
                                           features_to_vary=[f for f
-                                                            in optimizer._starting_dataset.get_combined().columns
+                                                            in optimizer.starting_dataset.get_combined().columns
                                                             if ('bottle' not in f) and (
                                                                     (f in CLIPS_COLUMNS)
                                                                     or (f in FRAMED_TO_CLIPS_IDENTICAL.keys())

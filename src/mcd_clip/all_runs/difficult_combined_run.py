@@ -1,12 +1,9 @@
-import io
 import os
 import random
 from datetime import datetime
 
-import cairosvg
 import numpy as np
 import pandas as pd
-from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
 
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
@@ -28,29 +25,6 @@ def _generate_with_retry(cumulative, generator, seed=23):
         _generate_with_retry(cumulative, generator, seed=random.randint(1, 50))
 
 
-def average_image(images_paths, batch_dir: str):
-    # Create a numpy array of floats to store the average
-    first_image = cairosvg.svg2png(url=images_paths[0])
-    first_image = Image.open(io.BytesIO(first_image))
-    w, h = first_image.size
-    N = len(images_paths)
-    arr = np.zeros((h, w, 3), ).astype('float64')
-
-    # Convert SVG images to PNG using cairosvg and build up average pixel intensities
-    for im in images_paths:
-        png_image = cairosvg.svg2png(url=im)
-        png_image = Image.open(io.BytesIO(png_image))
-        imarr = np.array(png_image).astype('float64')
-        arr = arr + imarr / N
-
-    # Round values in array and cast as 8-bit integer
-    arr = np.array(np.round(arr), dtype=np.uint8)
-
-    # Generate, save and preview final image
-    out = Image.fromarray(arr, mode="RGB")
-    out.save(os.path.join(batch_dir, "average.png"))
-
-
 def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     batch_dir = os.path.join(run_dir, f"batch_{batch_number}")
     os.makedirs(batch_dir, exist_ok=False)
@@ -64,18 +38,17 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
         images_paths.append(image_path)
         with open(image_path, "wb") as file:
             file.write(rendering_result.image)
-    average_image(images_paths, batch_dir)
 
 
-def _build_full_df(generator: CounterfactualsGenerator,
-                   optimizer: CombinedOptimizer,
-                   starting_design: pd.DataFrame):
+def _build_cfs_with_query(generator: CounterfactualsGenerator,
+                          optimizer: CombinedOptimizer,
+                          starting_design: pd.DataFrame):
     sampled = generator.sample_with_weights(num_samples=1000,
                                             cfc_weight=1,
                                             gower_weight=1,
                                             avg_gower_weight=1,
                                             diversity_weight=0.1)
-    with_query = pd.concat([sampled, starting_design], axis=0)
+    with_query = pd.concat([starting_design, sampled, ], axis=0)
     scores_df = get_scores_dataframe(generator, with_query)
     scores_df.index = with_query.index
     predictions = optimizer.predict(CombinedDataset(with_query))
@@ -91,9 +64,20 @@ def _build_full_df(generator: CounterfactualsGenerator,
     return full_df
 
 
+def build_dataset_with_predictions(combined_optimizer: CombinedOptimizer):
+    dataset = combined_optimizer.starting_dataset
+    df = dataset.get_combined()
+    predictions = combined_optimizer.predict(dataset)
+    for c in predictions.columns:
+        df[c] = predictions[c]
+    df.replace(to_replace=[np.inf, -np.inf], value=np.nan, inplace=True)
+    df.dropna(axis=0, inplace=True)
+    return df
+
+
 def run():
-    GENERATIONS = 150
-    BATCH_SIZE = 50
+    GENERATIONS = 30
+    BATCH_SIZE = 30
     BATCHES = GENERATIONS // BATCH_SIZE
 
     target_embeddings = [
@@ -102,9 +86,9 @@ def run():
     ]
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=0.76),
-            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=4),
-            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=47),
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1.5),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=8),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=75),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
@@ -136,12 +120,13 @@ def run():
     for i in range(1, BATCHES + 1):
         cumulative = i * BATCH_SIZE
         _generate_with_retry(cumulative, generator)
-        full_df = _build_full_df(generator, optimizer, starting_design)
+        full_df = _build_cfs_with_query(generator, optimizer, starting_design)
         full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        # lyle_plot(full_df,
-        #           generator._problem._data_package.predictions_dataset.columns,
-        #           generator._problem._data_package.design_targets.continuous_targets,
-        #           os.path.join(run_dir, f"lyle_fig_batch_{i}.png"))
+        custom_plot(full_df,
+                    build_dataset_with_predictions(optimizer).sample(300),
+                    generator._problem._data_package.predictions_dataset.columns,
+                    generator._problem._data_package.design_targets.continuous_targets,
+                    os.path.join(run_dir, os.path.join(run_dir, f"lyle_fig_batch_{i}.png")))
         render_some(full_df, run_dir, i)
 
 

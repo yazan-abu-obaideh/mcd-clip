@@ -73,7 +73,7 @@ class CombinedOptimizer:
         self._design_targets = design_targets
         self._structural_predictor = StructuralPredictor()
         self._extra_bonus_objectives = extra_bonus_objectives or []
-        self._starting_dataset = self._build_starting_dataset()
+        self.starting_dataset = self._build_starting_dataset()
         self.structural_enabled = ('Model Mass' in design_targets.get_all_constrained_labels() or
                                    "Sim 1 Safety Factor (Inverted)" in design_targets.get_all_constrained_labels())
         self.starting_design: CombinedDataset = None
@@ -104,18 +104,18 @@ class CombinedOptimizer:
         validation_functions = validation_functions or []
         print(f"Number of validation functions is {len(validation_functions)}")
         data_package = DataPackage(
-            features_dataset=self._starting_dataset.get_combined(),
-            predictions_dataset=self.predict(self._starting_dataset),
+            features_dataset=self.starting_dataset.get_combined(),
+            predictions_dataset=self.predict(self.starting_dataset),
             query_x=self.starting_design.get_combined(),
             design_targets=self._design_targets,
             features_to_vary=features_to_vary,
-            datatypes=map_combined_datatypes(self._starting_dataset.get_combined()),
+            datatypes=map_combined_datatypes(self.starting_dataset.get_combined()),
             bonus_objectives=self.distance_columns() + self._extra_bonus_objectives
         )
         problem = MultiObjectiveProblem(
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
-                pd.DataFrame(d, columns=self._starting_dataset.get_combined().columns))),
+                pd.DataFrame(d, columns=self.starting_dataset.get_combined().columns))),
             constraint_functions=validation_functions
         )
         problem.set_desired_scores(
@@ -200,7 +200,7 @@ class CombinedOptimizer:
     def _get_starting_design(self, design_index: str) -> CombinedDataset:
         return CombinedDataset(
             pd.DataFrame.from_records(
-                [self._starting_dataset.get_combined().loc[design_index].to_dict()]
+                [self.starting_dataset.get_combined().loc[design_index].to_dict()]
             )
         )
 
