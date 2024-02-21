@@ -5,6 +5,8 @@ from decode_mcd import MultiObjectiveProblem, CounterfactualsGenerator, Continuo
     DataPackage
 from pymoo.core.variable import Real
 
+from mcd_clip.resource_utils import run_result_path
+
 
 class SimpleAblation2Dimensions:
     def run_case_study(self):
@@ -114,7 +116,7 @@ class SimpleAblation2Dimensions:
 
         fraction_valid = np.sum(validity) / len(validity)
         print(f'Fraction valid: {fraction_valid}')
-        plt.savefig(name)
+        plt.savefig(run_result_path(name))
 
 
 if __name__ == '__main__':

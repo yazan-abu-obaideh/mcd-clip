@@ -16,7 +16,7 @@ from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance_column_name, TextEmbeddingTarget, \
     ImageEmbeddingTarget, get_scores_dataframe
 from mcd_clip.resource_utils import run_result_path, resource_path
-from mcd_clip.result_plots.draw_pair_plots import lyle_plot
+from mcd_clip.result_plots.draw_pair_plots import custom_plot
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
 

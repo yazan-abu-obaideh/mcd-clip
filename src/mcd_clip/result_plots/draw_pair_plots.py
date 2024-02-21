@@ -1,84 +1,24 @@
 from typing import List
 
 import matplotlib.patches as patches
-import matplotlib.text
-import numpy as np
 import pandas as pd
 import seaborn as sns
-from decode_mcd import DesignTargets, ContinuousTarget
-from matplotlib import pyplot as plt
+from decode_mcd import ContinuousTarget
 from matplotlib.path import Path
 
-from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET
-from mcd_clip.optimization.combined_optimizer import TextEmbeddingTarget, ImageEmbeddingTarget
-from mcd_clip.resource_utils import resource_path
 
-target_embeddings = [
-    TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
-    ImageEmbeddingTarget(image_path=resource_path('mtb.png'))
-]
-design_targets = DesignTargets(
-    continuous_targets=[
-        ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1),
-        ContinuousTarget('Model Mass', lower_bound=0, upper_bound=6),
-        BACK_TARGET,
-        ARMPIT_WRIST_TARGET,
-        KNEE_TARGET,
-        # AERODYNAMIC_DRAG_TARGET
-    ])
+def custom_plot(query_and_counterfactuals: pd.DataFrame,
+                dataset_w_predictions: pd.DataFrame,
+                prediction_columns: List[str],
+                continuous_targets: List[ContinuousTarget],
+                save_path: str):
+    obj_scores = pd.DataFrame(query_and_counterfactuals, columns=prediction_columns)
 
-
-def _get_x_label(_axis) -> matplotlib.text.Text:
-    return _axis.xaxis.label
-
-
-def _get_y_label(_axis) -> matplotlib.text.Text:
-    return _axis.yaxis.label
-
-
-def draw_figure(data: pd.DataFrame, selected_columns: List[str], save_path: str):
-    trimmed_data = pd.DataFrame(data, columns=selected_columns)
-    grid = sns.pairplot(trimmed_data)
-    for i in range(len(grid.axes)):
-        for j in range(len(grid.axes[i])):
-            _draw_on_axis(grid.axes[i][j])
-    grid.savefig(save_path)
-
-
-def _draw_on_axis(curr_axis):
-    x_label = _get_x_label(curr_axis).get_text()
-    y_label = _get_y_label(curr_axis).get_text()
-    if x_label in design_targets.get_all_constrained_labels():
-        print(f"Drawing line for {x_label} and {y_label}")
-        x_target = [target for
-                    target in design_targets.continuous_targets
-                    if target.label == x_label
-                    ][0]
-        x_target: ContinuousTarget
-        curr_axis.axvline(
-            x=x_target.lower_bound,
-        )
-        curr_axis.axvline(
-            x=x_target.upper_bound,
-        )
-
-
-def regular_plot():
-    pass
-
-
-def lyle_plot(counterfactuals: pd.DataFrame,
-              dataset_w_predictions: pd.DataFrame,
-              prediction_columns: List[str],
-              continuous_targets: List[DesignTargets],
-              save_path: str):
-    obj_scores = pd.DataFrame(counterfactuals, columns=prediction_columns)
-
-    s = [100] + [20] * (len(counterfactuals) - 1)
+    s = [100] + [20] * (len(query_and_counterfactuals) - 1)
     fontsize = 18
     markers = ["X", "."]
     palette = ["#000000", "#3291a8", ]
-    classes = ["Query"] + ["Counterfactuals"] * (len(counterfactuals) - 1)
+    classes = ["Query"] + ["Counterfactuals"] * (len(query_and_counterfactuals) - 1)
 
     # Add in Dataset
     if True:

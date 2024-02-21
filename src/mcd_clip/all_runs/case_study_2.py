@@ -1,13 +1,11 @@
-import io
+import os
 import os
 import random
 from datetime import datetime
 from typing import List
 
-import cairosvg
 import numpy as np
 import pandas as pd
-from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
 
 from mcd_clip.datasets.columns_constants import CLIPS_COLUMNS, FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
@@ -18,29 +16,6 @@ from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance
 from mcd_clip.optimization.embedding_similarity_optimizer import to_full_clips_dataframe
 from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
-
-
-def average_image(images_paths, batch_dir: str):
-    # Create a numpy array of floats to store the average
-    first_image = cairosvg.svg2png(url=images_paths[0])
-    first_image = Image.open(io.BytesIO(first_image))
-    w, h = first_image.size
-    N = len(images_paths)
-    arr = np.zeros((h, w, 3), ).astype('float64')
-
-    # Convert SVG images to PNG using cairosvg and build up average pixel intensities
-    for im in images_paths:
-        png_image = cairosvg.svg2png(url=im)
-        png_image = Image.open(io.BytesIO(png_image))
-        imarr = np.array(png_image).astype('float64')
-        arr = arr + imarr / N
-
-    # Round values in array and cast as 8-bit integer
-    arr = np.array(np.round(arr), dtype=np.uint8)
-
-    # Generate, save and preview final image
-    out = Image.fromarray(arr, mode="RGB")
-    out.save(os.path.join(batch_dir, "average.png"))
 
 
 def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance_column_suffix: str):
@@ -55,7 +30,6 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance
         images_paths.append(image_path)
         with open(image_path, "wb") as file:
             file.write(rendering_result.image)
-    average_image(images_paths, batch_dir)
 
 
 def run():
