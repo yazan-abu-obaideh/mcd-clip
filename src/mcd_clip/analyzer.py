@@ -133,12 +133,12 @@ def draw_lyle_plot_thing():
 
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Safety Factor', lower_bound=1.316, upper_bound=10),
-            ContinuousTarget('Frame Mass', lower_bound=2, upper_bound=4),
-            ContinuousTarget('Ergonomics', lower_bound=0, upper_bound=47),
-            ContinuousTarget(label="Drag Force $\downarrow$", lower_bound=0, upper_bound=22.5),
-            ContinuousTarget(label='Text Match', lower_bound=0, upper_bound=0.73),
-            ContinuousTarget(label='Image Match', lower_bound=0, upper_bound=0.11),
+            ContinuousTarget(r'Safety Factor $\uparrow$', lower_bound=1.316, upper_bound=20),
+            ContinuousTarget(r'Frame Mass $\downarrow$', lower_bound=2, upper_bound=4),
+            ContinuousTarget(r'Ergonomics $\downarrow$', lower_bound=0, upper_bound=47),
+            ContinuousTarget(label=r"Drag Force $\downarrow$", lower_bound=0, upper_bound=22.5),
+            ContinuousTarget(label=r'Text Match $\downarrow$', lower_bound=0, upper_bound=0.73),
+            ContinuousTarget(label=r'Image Match $\downarrow$', lower_bound=0, upper_bound=0.11),
             # ContinuousTarget('gower_distance', lower_bound=0, upper_bound=1),
             # ContinuousTarget('avg_gower_distance', lower_bound=0, upper_bound=1),
             # ContinuousTarget('changed_feature_ratio', lower_bound=0, upper_bound=1),
@@ -146,16 +146,31 @@ def draw_lyle_plot_thing():
 
     counterfactuals_with_scores = pd.read_csv(
         run_result_path(os.path.join('02-21--01.09.38-template-combined-run', 'batch_3.csv')), index_col=0)
+
+    old_to_new = {
+        'Sim 1 Safety Factor (Inverted)': r'Safety Factor $\uparrow$',
+        'Model Mass': r'Frame Mass $\downarrow$',
+        'Aerodynamic Drag': r'Drag Force $\downarrow$',
+        'ergonomic_score': r'Ergonomics $\downarrow$',
+        distance_column_name(0): r'Text Match $\downarrow$',
+        distance_column_name(1): r'Image Match $\downarrow$',
+    }
+    counterfactuals_with_scores.rename(columns=old_to_new, inplace=True)
+
+    counterfactuals_with_scores[r'Safety Factor $\uparrow$'] = 1 / counterfactuals_with_scores[r'Safety Factor $\uparrow$']
+
     counterfactuals_with_scores = counterfactuals_with_scores[::-1]
 
     dataset = pd.read_csv(run_result_path('dataset_with_predictions.csv'), index_col=0)
     dataset.replace(to_replace=[np.inf, -np.inf], value=np.nan, inplace=True)
     dataset.dropna(axis=0, inplace=True)
+    dataset.rename(columns=old_to_new, inplace=True)
+    dataset[r'Safety Factor $\uparrow$'] = 1 / dataset[r'Safety Factor $\uparrow$']
     lyle_plot(
-        counterfactuals=counterfactuals_with_scores,
-        dataset_w_predictions=dataset,
+        counterfactuals=counterfactuals_with_scores[:100],
+        dataset_w_predictions=dataset.sample(300),
         continuous_targets=design_targets.continuous_targets,
-        prediction_columns=mcd_scores + columns,
+        prediction_columns=list(old_to_new.values()),
         save_path='lyle-plot-latest.png'
     )
 
@@ -230,4 +245,3 @@ def draw_bikes_grid():
 
 if __name__ == '__main__':
     draw_lyle_plot_thing()
-    render_by_original_index('739')

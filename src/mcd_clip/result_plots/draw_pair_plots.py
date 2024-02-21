@@ -75,7 +75,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     obj_scores = pd.DataFrame(counterfactuals, columns=prediction_columns)
 
     s = [100] + [20] * (len(counterfactuals) - 1)
-    fontsize = 14
+    fontsize = 18
     markers = ["X", "."]
     palette = ["#000000", "#3291a8", ]
     classes = ["Query"] + ["Counterfactuals"] * (len(counterfactuals) - 1)
@@ -96,7 +96,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     maximums = []
     plot_minimums = []
     plot_maximums = []
-    outlier_thresh = 0.5
+    outlier_thresh = 2
     for i, target in enumerate(continuous_targets):
         name = target.label
         score = obj_scores[name]
@@ -118,6 +118,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
             plot_minimums.append(score.min(axis=0))
             plot_maximums.append(obj_scores.max(axis=0))
     plot_minimums[0] = 0.01
+    plot_maximums[0] = 8
 
     scores = pd.concat(scores, axis=1)
     # print(scores)
@@ -133,7 +134,10 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     palette = palette[::-1]
 
     grid = sns.pairplot(scores, hue="class", kind="scatter", diag_kind="kde", palette=palette, markers=markers,
-                        plot_kws={"s": 25}, diag_kws={"cut": 0}, corner=True)
+                        plot_kws={"s": s}, diag_kws={"cut": 0,
+                                                     "common_norm": False,
+                                                     "bw_adjust": 0.5,
+                                                     }, corner=True)
 
     # add shaded region to plot
     for i, ax in enumerate(grid.axes.ravel()):
@@ -155,6 +159,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
         # set axis limits
         ax.set_xlim(minx_o, maxx_o)
         ax.set_ylim(miny_o, maxy_o)
+        ax.get_yaxis().set_label_coords(-0.2, 0.5)
 
         if x_idx != y_idx:
             vertices = [
@@ -199,7 +204,7 @@ def lyle_plot(counterfactuals: pd.DataFrame,
 
         # set axis label sizes
         ax.set_xlabel(ax.get_xlabel(), fontsize=fontsize)
-        ax.set_ylabel(ax.get_ylabel(), fontsize=fontsize)
+        ax.set_ylabel(str(ax.get_ylabel()).split('$')[0], fontsize=fontsize)
 
     # add shaded region to legend
     legend = grid.fig.legends[0]  # Get the first (and typically only) legend
@@ -207,11 +212,14 @@ def lyle_plot(counterfactuals: pd.DataFrame,
     handles.append(patch)
     labels.append('Invalid Region')
 
+    for handle in handles:
+        handle._sizes = [200]
+
     # Remove the existing legend
     for legend in grid.fig.legends:
         legend.remove()
     # Create replacement
     grid.fig.legend(handles, labels, loc='upper right', title='', fontsize=fontsize,
-                    bbox_to_anchor=(0.8, 1))
+                    bbox_to_anchor=(0.85, 1))
 
-    grid.savefig(save_path)
+    grid.savefig(save_path, dpi=300)
