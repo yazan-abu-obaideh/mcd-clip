@@ -86,9 +86,9 @@ def run():
     ]
     design_targets = DesignTargets(
         continuous_targets=[
-            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=1.5),
-            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=8),
-            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=75),
+            ContinuousTarget('Sim 1 Safety Factor (Inverted)', lower_bound=0, upper_bound=0.76),
+            ContinuousTarget('Model Mass', lower_bound=2, upper_bound=4),
+            ContinuousTarget('ergonomic_score', lower_bound=0, upper_bound=47),
             BACK_TARGET,
             ARMPIT_WRIST_TARGET,
             KNEE_TARGET,
