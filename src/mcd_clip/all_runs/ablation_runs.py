@@ -63,14 +63,28 @@ def get_validity(sampled: pd.DataFrame):
     return result
 
 
-def run(features_off: bool):
+def run(features_on: bool, run_id_suffix: str):
+    run_with_specific_features(
+        gower_on=features_on,
+        average_gower_on=features_on,
+        changed_feature_ratio_on=features_on,
+        use_empty_repair=not features_on,
+        run_id_suffix=run_id_suffix
+    )
+
+
+def run_with_specific_features(
+        gower_on: bool,
+        average_gower_on: bool,
+        changed_feature_ratio_on: bool,
+        use_empty_repair: bool,
+        run_id_suffix: str
+):
     GENERATIONS = 50
     BATCH_SIZE = 50
     BATCHES = GENERATIONS // BATCH_SIZE
 
-    run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template'
-    if features_off:
-        run_id += '-features-off'
+    run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template' + run_id_suffix
 
     optimizer = CombinedOptimizer(
         design_targets=DesignTargets(
@@ -83,14 +97,12 @@ def run(features_off: bool):
         extra_bonus_objectives=['Model Mass', 'Sim 1 Safety Factor (Inverted)'],
     )
     optimizer.set_starting_design_by_index('1')
-    features_desired = not features_off
-    empty_repair_desired = features_off
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
-                                          gower_on=features_desired,
-                                          average_gower_on=features_desired,
-                                          changed_feature_on=features_desired,
+                                          gower_on=gower_on,
+                                          average_gower_on=average_gower_on,
+                                          changed_feature_on=changed_feature_ratio_on,
                                           initialize_from_dataset=False,
-                                          use_empty_repair=empty_repair_desired,
+                                          use_empty_repair=use_empty_repair,
                                           )
 
     run_dir = run_result_path(run_id)
@@ -115,5 +127,5 @@ def run(features_off: bool):
 
 
 if __name__ == '__main__':
-    run(features_off=True)
-    run(features_off=False)
+    run(features_on=False, run_id_suffix='classical')
+    run(features_on=True, run_id_suffix='-mcd')
