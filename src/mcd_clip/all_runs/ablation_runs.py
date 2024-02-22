@@ -64,7 +64,7 @@ def get_validity(sampled: pd.DataFrame):
 
 
 def run(features_off: bool):
-    GENERATIONS = 100
+    GENERATIONS = 50
     BATCH_SIZE = 50
     BATCHES = GENERATIONS // BATCH_SIZE
 
@@ -75,8 +75,8 @@ def run(features_off: bool):
     optimizer = CombinedOptimizer(
         design_targets=DesignTargets(
             continuous_targets=[
-                ContinuousTarget("Model Mass", 0, 1.5),
-                ContinuousTarget("Sim 1 Safety Factor (Inverted)", 0, 0.85),
+                ContinuousTarget("Model Mass", 0, 7),
+                ContinuousTarget("Sim 1 Safety Factor (Inverted)", 0, 1),
             ]
         ),
         target_embeddings=[],
@@ -100,18 +100,18 @@ def run(features_off: bool):
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        sampled = generator.sample_with_weights(num_samples=500,
+        sampled = generator.sample_with_weights(num_samples=3,
                                                 cfc_weight=100,
                                                 gower_weight=100,
                                                 avg_gower_weight=200,
                                                 bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
-                                                diversity_weight=0,
+                                                diversity_weight=0.05,
                                                 include_dataset=False)
         validity = get_validity(sampled)
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled)), validity], axis=1)
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
-        render_some(full_df.sample(5), run_dir, i)
+        render_some(full_df, run_dir, i)
 
 
 if __name__ == '__main__':
