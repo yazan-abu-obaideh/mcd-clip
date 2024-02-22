@@ -95,6 +95,7 @@ class CombinedOptimizer:
                         changed_feature_on: bool = True,
                         use_empty_repair: bool = False,
                         pop_size=100,
+                        initialize_from_dataset=True,
                         features_to_vary: List[str] = None,
                         validation_functions: List[Callable] = None) -> CounterfactualsGenerator:
 
@@ -117,7 +118,7 @@ class CombinedOptimizer:
             data_package=data_package,
             prediction_function=lambda d: self.predict(CombinedDataset(
                 pd.DataFrame(d, columns=self.starting_dataset.get_combined().columns))),
-            constraint_functions=validation_functions
+            constraint_functions=validation_functions,
         )
         problem.set_desired_scores(
             gower=gower_on,
@@ -127,7 +128,7 @@ class CombinedOptimizer:
         generator = CounterfactualsGenerator(
             problem=problem,
             pop_size=pop_size,
-            initialize_from_dataset=True,
+            initialize_from_dataset=initialize_from_dataset,
         )
         generator.use_empty_repair(use_empty_repair)
         return generator

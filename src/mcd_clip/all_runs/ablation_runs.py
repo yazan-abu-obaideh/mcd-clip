@@ -64,13 +64,13 @@ def get_validity(sampled: pd.DataFrame):
     return result
 
 
-def run(ablation: bool):
+def run(features_off: bool):
     GENERATIONS = 100
     BATCH_SIZE = 50
     BATCHES = GENERATIONS // BATCH_SIZE
 
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template'
-    if ablation:
+    if features_off:
         run_id += '-features-off'
 
     optimizer = CombinedOptimizer(
@@ -84,8 +84,8 @@ def run(ablation: bool):
         extra_bonus_objectives=['Model Mass', 'Sim 1 Safety Factor (Inverted)'],
     )
     optimizer.set_starting_design_by_index('1')
-    features_desired = not ablation
-    empty_repair_desired = ablation
+    features_desired = not features_off
+    empty_repair_desired = features_off
     features_to_vary = [feature for feature in optimizer.starting_dataset.get_combined().columns if
                         ('material' in str(feature).lower() or feature in FRAMED_COLUMNS)]
     generator = optimizer.build_generator(validation_functions=[],
@@ -118,5 +118,5 @@ def run(ablation: bool):
 
 
 if __name__ == '__main__':
-    run(ablation=True)
-    run(ablation=False)
+    run(features_off=True)
+    run(features_off=False)
