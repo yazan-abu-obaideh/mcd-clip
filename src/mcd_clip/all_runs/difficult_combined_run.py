@@ -77,8 +77,8 @@ def build_dataset_with_predictions(combined_optimizer: CombinedOptimizer):
 
 
 def run(plot=True,
-        generations=180,
-        batch_size=60):
+        generations=150,
+        batch_size=50):
     GENERATIONS = generations
     BATCH_SIZE = batch_size
     BATCHES = GENERATIONS // BATCH_SIZE

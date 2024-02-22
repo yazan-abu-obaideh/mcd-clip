@@ -86,7 +86,7 @@ def run(ablation: bool):
     optimizer.set_starting_design_by_index('1')
     features_desired = not ablation
     empty_repair_desired = ablation
-    features_to_vary = [feature for feature in optimizer._starting_dataset.get_combined().columns if
+    features_to_vary = [feature for feature in optimizer.starting_dataset.get_combined().columns if
                         ('material' in str(feature).lower() or feature in FRAMED_COLUMNS)]
     generator = optimizer.build_generator(validation_functions=[],
                                           gower_on=features_desired,

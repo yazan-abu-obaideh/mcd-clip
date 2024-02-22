@@ -1,6 +1,4 @@
 import os
-import os
-import random
 from datetime import datetime
 from typing import List
 
@@ -8,7 +6,6 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, ContinuousTarget, CounterfactualsGenerator
 
-from mcd_clip.datasets.columns_constants import CLIPS_COLUMNS, FRAMED_TO_CLIPS_IDENTICAL, FRAMED_TO_CLIPS_UNITS
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance_column_name, TextEmbeddingTarget, \
@@ -21,7 +18,6 @@ from mcd_clip.singletons import IMAGE_CONVERTOR
 def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance_column_suffix: str):
     batch_dir = os.path.join(run_dir, f"batch_{batch_number}_distance_{distance_column_suffix}")
     os.makedirs(batch_dir, exist_ok=False)
-    print(f"Closest counterfactuals {full_df}")
     clips = to_full_clips_dataframe(CombinedDataset(full_df).get_as_clips())
     images_paths = []
     for idx in clips.index:
@@ -34,8 +30,8 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance
 
 def run():
     TEXT_TARGET = "A futuristic black cyberpunk-style road racing bicycle"
-    GENERATIONS = 400
-    BATCH_SIZE = 100
+    GENERATIONS = 800
+    BATCH_SIZE = 200
     BATCHES = GENERATIONS // BATCH_SIZE
 
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + "-template-" + TEXT_TARGET
@@ -56,11 +52,7 @@ def run():
     generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
                                           features_to_vary=[f for f
                                                             in optimizer.starting_dataset.get_combined().columns
-                                                            if ('bottle' not in f) and (
-                                                                    (f in CLIPS_COLUMNS)
-                                                                    or (f in FRAMED_TO_CLIPS_IDENTICAL.keys())
-                                                                    or (f in FRAMED_TO_CLIPS_UNITS.keys())
-                                                            )
+                                                            if ('bottle' not in f)
                                                             ]
                                           )
     generator.use_empty_repair(False)
@@ -70,31 +62,32 @@ def run():
 
     for i in range(1, BATCHES + 1):
         cumulative = i * BATCH_SIZE
-        _generate_with_retry(cumulative, generator)
-        sampled = generator.sample_with_weights(num_samples=1000, cfc_weight=1, gower_weight=1, avg_gower_weight=1,
-                                                diversity_weight=0.1)
-        full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled))], axis=1)
-        assert len(full_df) == len(sampled)
-        full_df.to_csv(os.path.join(run_dir, f'batch_{i}.csv'))
-        render_some(_sample(optimizer, generator, 0), run_dir, i, 'text')
-        render_some(_sample(optimizer, generator, 1), run_dir, i, 'image')
+        generator.generate(cumulative, seed=45)
+        render_some(_selective_sample(optimizer, generator, 0), run_dir, i, 'text')
+        render_some(_selective_sample(optimizer, generator, 1), run_dir, i, 'image')
         render_some(_balance_sample(generator,
-                                    n_samples=3,
+                                    n_samples=4,
                                     objective_weights=[1, 1],
                                     diversity_weight=0.1),
                     run_dir, i, 'both')
 
 
-def _sample(
+def _selective_sample(
         optimizer: CombinedOptimizer,
-        generator: CounterfactualsGenerator, distance_column_index: int):
-    as_many = _balance_sample(generator,
-                              objective_weights=[1 * (1 - distance_column_index), 1 * distance_column_index],
-                              diversity_weight=0.01,
-                              n_samples=500)
+        generator: CounterfactualsGenerator,
+        distance_column_index: int):
+    desired_weight = 1
+    objective_weights = [desired_weight * (1 - distance_column_index), desired_weight * distance_column_index]
+    as_many = generator.sample_with_weights(num_samples=100, cfc_weight=0,
+                                            gower_weight=0, avg_gower_weight=0,
+                                            diversity_weight=0,
+                                            bonus_objectives_weights=np.array(objective_weights).reshape((1, 2)),
+                                            include_dataset=False)
     column_ = distance_column_name(distance_column_index)
     as_many[column_] = optimizer.predict(CombinedDataset(as_many))[column_]
-    return as_many.sort_values(by=column_, ascending=True)[:3]
+    closes_cfs = as_many.sort_values(by=column_, ascending=True)[:4]
+    print(f"Found closest cfs {closes_cfs[distance_column_name(distance_column_index)]}")
+    return closes_cfs
 
 
 def _balance_sample(generator: CounterfactualsGenerator,
@@ -105,14 +98,6 @@ def _balance_sample(generator: CounterfactualsGenerator,
                                          gower_weight=1, avg_gower_weight=1,
                                          bonus_objectives_weights=np.array(objective_weights).reshape((1, 2)),
                                          diversity_weight=diversity_weight, include_dataset=False)
-
-
-def _generate_with_retry(cumulative: int, generator: CounterfactualsGenerator, seed: int = 92):
-    try:
-        generator.generate(cumulative, seed=seed)
-    except AssertionError as e:
-        print(f"Error {e}, retrying...")
-        _generate_with_retry(cumulative, generator, random.randint(1, 100))
 
 
 if __name__ == '__main__':

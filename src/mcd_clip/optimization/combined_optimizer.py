@@ -11,13 +11,13 @@ from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalcu
 from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_drag, calculate_angles
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET
+from mcd_clip.bike_rider_fit.rider_constants import SAMPLE_RIDER
 from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_datatypes, \
     OriginalCombinedDataset
 from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
 from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
 from mcd_clip.structural.structural_predictor import StructuralPredictor
-from test_fit_analysis import SAMPLE_RIDER
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 ORIGINAL_COMBINED = OriginalCombinedDataset()
@@ -94,6 +94,7 @@ class CombinedOptimizer:
                         average_gower_on: bool = True,
                         changed_feature_on: bool = True,
                         use_empty_repair: bool = False,
+                        pop_size=100,
                         features_to_vary: List[str] = None,
                         validation_functions: List[Callable] = None) -> CounterfactualsGenerator:
 
@@ -125,7 +126,7 @@ class CombinedOptimizer:
         )
         generator = CounterfactualsGenerator(
             problem=problem,
-            pop_size=100,
+            pop_size=pop_size,
             initialize_from_dataset=True,
         )
         generator.use_empty_repair(use_empty_repair)
