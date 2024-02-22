@@ -105,7 +105,7 @@ def run(features_off: bool):
                                                 gower_weight=100,
                                                 avg_gower_weight=200,
                                                 bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
-                                                diversity_weight=0.1,
+                                                diversity_weight=0,
                                                 include_dataset=False)
         validity = get_validity(sampled)
         full_df = pd.concat([sampled, optimizer.predict(CombinedDataset(sampled)), validity], axis=1)
