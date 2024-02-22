@@ -8,7 +8,6 @@ import pandas as pd
 from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget
 
-from mcd_clip.datasets.columns_constants import FRAMED_COLUMNS
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.datasets.validations_lists import COMBINED_VALIDATION_FUNCTIONS
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer
@@ -86,13 +85,11 @@ def run(features_off: bool):
     optimizer.set_starting_design_by_index('1')
     features_desired = not features_off
     empty_repair_desired = features_off
-    features_to_vary = [feature for feature in optimizer.starting_dataset.get_combined().columns if
-                        ('material' in str(feature).lower() or feature in FRAMED_COLUMNS)]
-    generator = optimizer.build_generator(validation_functions=[],
+    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
                                           gower_on=features_desired,
                                           average_gower_on=features_desired,
                                           changed_feature_on=features_desired,
-                                          features_to_vary=features_to_vary,
+                                          initialize_from_dataset=False,
                                           use_empty_repair=empty_repair_desired,
                                           )
 
@@ -104,9 +101,9 @@ def run(features_off: bool):
         generator.generate(cumulative, seed=23)
 
         sampled = generator.sample_with_weights(num_samples=500,
-                                                cfc_weight=1,
-                                                gower_weight=1,
-                                                avg_gower_weight=500,
+                                                cfc_weight=100,
+                                                gower_weight=100,
+                                                avg_gower_weight=200,
                                                 bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
                                                 diversity_weight=0.1,
                                                 include_dataset=False)
