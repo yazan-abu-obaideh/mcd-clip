@@ -69,7 +69,8 @@ def run(features_on: bool, run_id_suffix: str):
         average_gower_on=features_on,
         changed_feature_ratio_on=features_on,
         use_empty_repair=not features_on,
-        run_id_suffix=run_id_suffix
+        run_id_suffix=run_id_suffix,
+        validation_functions=COMBINED_VALIDATION_FUNCTIONS
     )
 
 
@@ -78,7 +79,8 @@ def run_with_specific_features(
         average_gower_on: bool,
         changed_feature_ratio_on: bool,
         use_empty_repair: bool,
-        run_id_suffix: str
+        run_id_suffix: str,
+        validation_functions
 ):
     GENERATIONS = 50
     BATCH_SIZE = 50
@@ -97,7 +99,7 @@ def run_with_specific_features(
         extra_bonus_objectives=['Model Mass', 'Sim 1 Safety Factor (Inverted)'],
     )
     optimizer.set_starting_design_by_index('1')
-    generator = optimizer.build_generator(validation_functions=COMBINED_VALIDATION_FUNCTIONS,
+    generator = optimizer.build_generator(validation_functions=validation_functions,
                                           gower_on=gower_on,
                                           average_gower_on=average_gower_on,
                                           changed_feature_on=changed_feature_ratio_on,
@@ -124,8 +126,3 @@ def run_with_specific_features(
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
         render_some(full_df, run_dir, i)
-
-
-if __name__ == '__main__':
-    run(features_on=False, run_id_suffix='classical')
-    run(features_on=True, run_id_suffix='-mcd')
