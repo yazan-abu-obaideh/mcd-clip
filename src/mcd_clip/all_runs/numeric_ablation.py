@@ -51,7 +51,7 @@ def run_with_specific_features(
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        sampled = generator.sample_with_weights(num_samples=10,
+        sampled = generator.sample_with_weights(num_samples=100,
                                                 cfc_weight=3,
                                                 gower_weight=3,
                                                 avg_gower_weight=3,
@@ -68,19 +68,20 @@ def run_with_specific_features(
 
 
 if __name__ == '__main__':
-    run_with_specific_features(
-        gower_on=True,
-        changed_feature_ratio_on=True,
-        average_gower_on=True,
-        validation_functions=[],
-        use_empty_repair=False,
-        run_id_suffix='-mcd-full'
-    )
-    run_with_specific_features(
-        gower_on=False,
-        changed_feature_ratio_on=False,
-        average_gower_on=False,
-        validation_functions=[],
-        use_empty_repair=True,
-        run_id_suffix='-all-off'
-    )
+    for i in range(3):
+        run_with_specific_features(
+            gower_on=True,
+            changed_feature_ratio_on=True,
+            average_gower_on=True,
+            validation_functions=[],
+            use_empty_repair=False,
+            run_id_suffix='-mcd-full'
+        )
+        run_with_specific_features(
+            gower_on=False,
+            changed_feature_ratio_on=False,
+            average_gower_on=False,
+            validation_functions=[],
+            use_empty_repair=True,
+            run_id_suffix='-all-off'
+        )
