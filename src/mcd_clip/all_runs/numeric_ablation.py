@@ -51,10 +51,10 @@ def run_with_specific_features(
         cumulative = i * BATCH_SIZE
         generator.generate(cumulative, seed=23)
 
-        sampled = generator.sample_with_weights(num_samples=100,
-                                                cfc_weight=10,
-                                                gower_weight=10,
-                                                avg_gower_weight=10,
+        sampled = generator.sample_with_weights(num_samples=10,
+                                                cfc_weight=3,
+                                                gower_weight=3,
+                                                avg_gower_weight=3,
                                                 bonus_objectives_weights=np.array([1, 1]).reshape((1, 2)),
                                                 diversity_weight=0.05,
                                                 include_dataset=False)
@@ -63,7 +63,8 @@ def run_with_specific_features(
         assert len(full_df) == len(sampled)
         full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
         print(f"{run_id=}")
-        print(f"Validity for run {run_id} batch {i}: {np.mean(np.sum(validity, axis=1))}")
+        print(f"Average CV/design for run {run_id_suffix} batch {i}: {np.mean(np.sum(validity, axis=1))}")
+        print(f"Fraction of valid designs: {len(validity[np.sum(validity, axis=1) == 0])/len(validity)}")
 
 
 if __name__ == '__main__':
@@ -74,38 +75,6 @@ if __name__ == '__main__':
         validation_functions=[],
         use_empty_repair=False,
         run_id_suffix='-mcd-full'
-    )
-    run_with_specific_features(
-        gower_on=True,
-        changed_feature_ratio_on=True,
-        average_gower_on=True,
-        validation_functions=[],
-        use_empty_repair=True,
-        run_id_suffix='-repair-off'
-    )
-    run_with_specific_features(
-        gower_on=False,
-        changed_feature_ratio_on=True,
-        average_gower_on=True,
-        validation_functions=[],
-        use_empty_repair=False,
-        run_id_suffix='-gower-off'
-    )
-    run_with_specific_features(
-        gower_on=True,
-        changed_feature_ratio_on=False,
-        average_gower_on=True,
-        validation_functions=[],
-        use_empty_repair=False,
-        run_id_suffix='-cfc-off'
-    )
-    run_with_specific_features(
-        gower_on=True,
-        changed_feature_ratio_on=True,
-        average_gower_on=False,
-        validation_functions=[],
-        use_empty_repair=False,
-        run_id_suffix='-avg-gower-off'
     )
     run_with_specific_features(
         gower_on=False,
