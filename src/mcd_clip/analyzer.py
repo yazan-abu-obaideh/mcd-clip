@@ -9,10 +9,11 @@ from PIL import Image
 from decode_mcd import DesignTargets, ContinuousTarget
 from matplotlib import pyplot as plt
 
+from mcd_clip.all_runs.ablation_runs import get_validity
 from mcd_clip.datasets.combined_datasets import CombinedDataset, OriginalCombinedDataset
 from mcd_clip.optimization.combined_optimizer import distance_column_name
 from mcd_clip.optimization.embedding_similarity_optimizer import to_full_clips_dataframe
-from mcd_clip.resource_utils import run_result_path
+from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.result_plots.draw_pair_plots import custom_plot
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
@@ -21,6 +22,14 @@ def render_from_combined_data(data: pd.DataFrame):
     clips_data = to_full_clips_dataframe(CombinedDataset(data).get_as_clips())
     for idx in clips_data.index:
         _render_and_save(clips_data, idx)
+
+
+def print_validity():
+    df = pd.read_csv(resource_path('all_structural_data_aug.csv'))
+    validity = get_validity(df)
+    print(validity.head())
+    print(f"Fraction valid: {len(validity[np.sum(validity, axis=1) == 0])/len(validity)}")
+    print(f"Average CV: {np.mean(np.sum(validity, axis=1))}")
 
 
 def _render_and_save(clips_data: pd.DataFrame, idx):
@@ -119,4 +128,4 @@ def draw_bikes_grid():
 
 
 if __name__ == '__main__':
-    draw_lyle_plot_thing()
+    print_validity()
