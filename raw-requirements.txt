@@ -1,0 +1,8 @@
+decode-mcd
+CairoSVG
+transformers
+torch
+beautifulsoup4
+lxml
+attrs
+scikit-learn
