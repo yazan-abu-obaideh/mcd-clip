@@ -45,7 +45,7 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     clips = to_full_clips_dataframe(CombinedDataset(full_df).get_as_clips())
     images_paths = []
     for idx in clips.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(clips.loc[idx])
+        rendering_result = IMAGE_CONVERTOR.render_clip(clips[idx: idx + 1])
         image_path = os.path.join(batch_dir, f"bike_{idx}.svg")
         images_paths.append(image_path)
         with open(image_path, "wb") as file:

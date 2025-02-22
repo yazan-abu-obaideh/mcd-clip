@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
 
-from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from biked_commons.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_drag, calculate_angles
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET

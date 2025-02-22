@@ -28,12 +28,12 @@ def print_validity():
     df = pd.read_csv(resource_path('all_structural_data_aug.csv'))
     validity = get_validity(df)
     print(validity.head())
-    print(f"Fraction valid: {len(validity[np.sum(validity, axis=1) == 0])/len(validity)}")
+    print(f"Fraction valid: {len(validity[np.sum(validity, axis=1) == 0]) / len(validity)}")
     print(f"Average CV: {np.mean(np.sum(validity, axis=1))}")
 
 
 def _render_and_save(clips_data: pd.DataFrame, idx):
-    rendering_result = IMAGE_CONVERTOR.to_image(clips_data.loc[idx])
+    rendering_result = IMAGE_CONVERTOR.render_clip(clips_data[idx: idx + 1])
     with open(run_result_path(f'bike_{idx}.svg'), 'wb') as file:
         file.write(rendering_result.image)
     with open(run_result_path(f'bike_{idx}.txt'), 'w') as file:

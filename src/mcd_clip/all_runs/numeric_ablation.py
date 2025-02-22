@@ -5,10 +5,14 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DesignTargets, ContinuousTarget
 
-from mcd_clip.all_runs.ablation_runs import get_validity, render_some
+from mcd_clip.all_runs.ablation_runs import get_validity
 from mcd_clip.datasets.combined_datasets import CombinedDataset
 from mcd_clip.optimization.combined_optimizer import CombinedOptimizer
 from mcd_clip.resource_utils import run_result_path
+
+GENERATIONS = 50
+BATCH_SIZE = 50
+BATCHES = GENERATIONS // BATCH_SIZE
 
 
 def run_with_specific_features(
@@ -19,10 +23,6 @@ def run_with_specific_features(
         run_id_suffix: str,
         validation_functions
 ):
-    GENERATIONS = 50
-    BATCH_SIZE = 50
-    BATCHES = GENERATIONS // BATCH_SIZE
-
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + '-ablation-template' + run_id_suffix
 
     optimizer = CombinedOptimizer(
@@ -64,7 +64,7 @@ def run_with_specific_features(
         full_df.to_csv(os.path.join(run_dir, f"cfs_{i}.csv"))
         print(f"{run_id=}")
         print(f"Average CV/design for run {run_id_suffix} batch {i}: {np.mean(np.sum(validity, axis=1))}")
-        print(f"Fraction of valid designs: {len(validity[np.sum(validity, axis=1) == 0])/len(validity)}")
+        print(f"Fraction of valid designs: {len(validity[np.sum(validity, axis=1) == 0]) / len(validity)}")
 
 
 if __name__ == '__main__':

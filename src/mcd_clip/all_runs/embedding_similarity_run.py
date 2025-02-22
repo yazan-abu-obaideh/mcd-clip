@@ -14,6 +14,11 @@ from mcd_clip.optimization.combined_optimizer import CombinedOptimizer, distance
 from mcd_clip.resource_utils import run_result_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
+TEXT_TARGET = "A pink road bike with water bottles"
+GENERATIONS = 250
+BATCH_SIZE = 50
+BATCHES = GENERATIONS // BATCH_SIZE
+
 
 def average_image(images_paths, batch_dir: str):
     # Create a numpy array of floats to store the average
@@ -46,7 +51,7 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     clips = CombinedDataset(sampled_counterfactuals).get_as_clips()
     images_paths = []
     for idx in clips.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(clips.loc[idx])
+        rendering_result = IMAGE_CONVERTOR.render_clip(clips[idx: idx + 1])
         image_path = os.path.join(batch_dir, f"bike_{idx}.svg")
         images_paths.append(image_path)
         with open(image_path, "wb") as file:
@@ -55,11 +60,6 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
 
 
 def run():
-    TEXT_TARGET = "A pink road bike with water bottles"
-    GENERATIONS = 250
-    BATCH_SIZE = 50
-    BATCHES = GENERATIONS // BATCH_SIZE
-
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + "-template-" + TEXT_TARGET
 
     optimizer = CombinedOptimizer(

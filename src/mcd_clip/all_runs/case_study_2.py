@@ -14,6 +14,11 @@ from mcd_clip.optimization.embedding_similarity_optimizer import to_full_clips_d
 from mcd_clip.resource_utils import run_result_path, resource_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
 
+TEXT_TARGET = "A futuristic black cyberpunk-style road racing bicycle"
+GENERATIONS = 50
+BATCH_SIZE = 25
+BATCHES = GENERATIONS // BATCH_SIZE
+
 
 def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance_column_suffix: str):
     batch_dir = os.path.join(run_dir, f"batch_{batch_number}_distance_{distance_column_suffix}")
@@ -21,7 +26,7 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance
     clips = to_full_clips_dataframe(CombinedDataset(full_df).get_as_clips())
     images_paths = []
     for idx in clips.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(clips.loc[idx])
+        rendering_result = IMAGE_CONVERTOR.render_clip(clips[idx: idx + 1])
         image_path = os.path.join(batch_dir, f"bike_{idx}.svg")
         images_paths.append(image_path)
         with open(image_path, "wb") as file:
@@ -29,11 +34,6 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int, distance
 
 
 def run():
-    TEXT_TARGET = "A futuristic black cyberpunk-style road racing bicycle"
-    GENERATIONS = 800
-    BATCH_SIZE = 200
-    BATCHES = GENERATIONS // BATCH_SIZE
-
     run_id = str(datetime.now().strftime('%m-%d--%H.%M.%S')) + "-template-" + TEXT_TARGET
 
     optimizer = CombinedOptimizer(

@@ -34,7 +34,7 @@ def render_some(full_df: pd.DataFrame, run_dir: str, batch_number: int):
     clips = CombinedDataset(sampled_counterfactuals).get_as_clips()
     images_paths = []
     for idx in clips.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(clips.loc[idx])
+        rendering_result = IMAGE_CONVERTOR.render_clip(clips[idx: idx + 1])
         image_path = os.path.join(batch_dir, f"bike_{idx}.svg")
         images_paths.append(image_path)
         with open(image_path, "wb") as file:
@@ -79,9 +79,7 @@ def build_dataset_with_predictions(combined_optimizer: CombinedOptimizer):
 def run(plot=True,
         generations=150,
         batch_size=50):
-    GENERATIONS = generations
-    BATCH_SIZE = batch_size
-    BATCHES = GENERATIONS // BATCH_SIZE
+    batches = generations // batch_size
 
     target_embeddings = [
         TextEmbeddingTarget(text_target='A futuristic black cyberpunk-style road racing bicycle'),
@@ -120,8 +118,8 @@ def run(plot=True,
     starting_design = optimizer.starting_design.get_combined()
     starting_design.index = ['query']
 
-    for i in range(1, BATCHES + 1):
-        cumulative = i * BATCH_SIZE
+    for i in range(1, batches + 1):
+        cumulative = i * batch_size
         _generate_with_retry(cumulative, generator)
         if plot:
             full_df = _build_cfs_with_query(generator, optimizer, starting_design)

@@ -4,11 +4,11 @@ from traceback import print_exception
 
 import numpy as np
 import pandas as pd
+from biked_commons.api.rendering import RenderingResult
 from decode_mcd import CounterfactualsGenerator
 
-from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-from mcd_clip.bike_embedding.embedding_comparator import get_cosine_similarity
-from mcd_clip.bike_rendering.parametric_to_image_convertor import RenderingResult
+from biked_commons.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from biked_commons.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.optimization.embedding_similarity_optimizer import build_generator, to_full_clips_dataframe, PREDICTOR
 from mcd_clip.resource_utils import run_result_path
 from mcd_clip.singletons import IMAGE_CONVERTOR
@@ -40,7 +40,7 @@ def _attempt_sample_and_render(generator: CounterfactualsGenerator, result_dir: 
     counterfactuals.to_csv(path_or_buf=os.path.join(batch_result_dir, "counterfactuals.csv"))
     closest_counterfactuals = _get_closest(counterfactuals, target_embedding)
     for cf_index in closest_counterfactuals.index:
-        rendering_result = IMAGE_CONVERTOR.to_image(closest_counterfactuals.loc[cf_index])
+        rendering_result = IMAGE_CONVERTOR.render_clip(closest_counterfactuals[cf_index: cf_index + 1])
         _save_rendering_result(cf_index, rendering_result, batch_result_dir)
 
 
@@ -60,10 +60,8 @@ def _make_batch_dir(batch_number: int, result_dir: str):
 
 
 def _save_rendering_result(cf_index, rendering_result: RenderingResult, batch_result_dir):
-    with open(os.path.join(batch_result_dir, f"bike_{cf_index}.txt"), "w") as text_file:
-        text_file.write(rendering_result.bike_xml)
     with open(os.path.join(batch_result_dir, f"bike_{cf_index}.svg"), "wb") as image_file:
-        image_file.write(rendering_result.image)
+        image_file.write(rendering_result.image_bytes)
 
 
 def _build_run_id(target_text: str):

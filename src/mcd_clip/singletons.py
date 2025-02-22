@@ -1,5 +1,5 @@
-from mcd_clip.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-from mcd_clip.bike_rendering.parametric_to_image_convertor import ParametricToImageConvertor
+from biked_commons.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
+from biked_commons.api.rendering import SingleThreadedRenderer
 
 EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
-IMAGE_CONVERTOR = ParametricToImageConvertor()
+IMAGE_CONVERTOR = SingleThreadedRenderer()
