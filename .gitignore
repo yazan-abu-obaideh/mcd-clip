@@ -6,3 +6,7 @@ all_parametric.csv
 **/build
 **/run-results/
 **/generated/
+**/__pycache__/
+**/BikeCAD_17.1_configuration/
+**/temp.jar
+**/META-INF/
