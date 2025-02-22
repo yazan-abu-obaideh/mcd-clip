@@ -5,17 +5,14 @@ from traceback import print_exception
 import numpy as np
 import pandas as pd
 from biked_commons.api.rendering import RenderingResult
+from biked_commons.bike_embedding.embedding_comparator import get_cosine_similarity
 from decode_mcd import CounterfactualsGenerator
 
-from biked_commons.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
-from biked_commons.bike_embedding.embedding_comparator import get_cosine_similarity
 from mcd_clip.optimization.embedding_similarity_optimizer import build_generator, to_full_clips_dataframe, PREDICTOR
 from mcd_clip.resource_utils import run_result_path
-from mcd_clip.singletons import IMAGE_CONVERTOR
+from mcd_clip.singletons import IMAGE_CONVERTOR, EMBEDDING_CALCULATOR
 
 SIMILARITY = 'cosine_similarity'
-
-EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 
 
 def _get_counterfactuals(generator: CounterfactualsGenerator) -> pd.DataFrame:

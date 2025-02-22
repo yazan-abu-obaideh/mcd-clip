@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 from decode_mcd import DataPackage, DesignTargets, CounterfactualsGenerator, MultiObjectiveProblem, ContinuousTarget
 
-from biked_commons.bike_embedding.clip_embedding_calculator import ClipEmbeddingCalculatorImpl
 from mcd_clip.bike_rider_fit.fit_analysis.demoanalysis_wrapped import calculate_drag, calculate_angles
 from mcd_clip.bike_rider_fit.fit_optimization import BACK_TARGET, ARMPIT_WRIST_TARGET, KNEE_TARGET, \
     AERODYNAMIC_DRAG_TARGET
@@ -16,10 +15,10 @@ from mcd_clip.datasets.combined_datasets import CombinedDataset, map_combined_da
     OriginalCombinedDataset
 from mcd_clip.optimization.embedding_similarity_optimizer import predict_from_partial_dataframe, CONSTANT_COLUMNS
 from mcd_clip.resource_utils import run_result_path, resource_path
+from mcd_clip.singletons import EMBEDDING_CALCULATOR
 from mcd_clip.structural.load_data import load_augmented_framed_dataset
 from mcd_clip.structural.structural_predictor import StructuralPredictor
 
-EMBEDDING_CALCULATOR = ClipEmbeddingCalculatorImpl()
 ORIGINAL_COMBINED = OriginalCombinedDataset()
 
 _AVG_GOWER_INDEX = -1
